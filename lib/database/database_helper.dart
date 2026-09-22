@@ -132,7 +132,6 @@ class DatabaseHelper {
 
     debugPrint('✅ Inventario inicial insertado (batch)');
 
-    // Solo inserta el ejemplo si NO existe ya un vehículo
     final existentes = await db.query('vehiculo', limit: 1);
     if (existentes.isNotEmpty) {
       debugPrint('ℹ️ Ya hay vehículos, se omite ejemplo');
@@ -176,6 +175,20 @@ class DatabaseHelper {
     return await db.insert('vehiculo', vehiculo.toMap());
   }
 
+  Future<void> insertVehiculosPorLotes(List<String> modelos) async {
+    if (modelos.isEmpty) return;
+
+    final db = await database;
+
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final modelo in modelos) {
+        batch.insert('vehiculo', {'modelo': modelo});
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<List<Vehiculo>> getAllVehiculos() async {
     final db = await database;
     final maps = await db.query('vehiculo', orderBy: 'created_at DESC');
@@ -210,6 +223,19 @@ class DatabaseHelper {
       where: 'id_vehiculo = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<List<Map<String, dynamic>>> obtenerConteoPorModelo() async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT 
+        modelo,
+        COUNT(*) AS unidades,
+        MAX(created_at) AS ultimo_registro
+      FROM vehiculo
+      GROUP BY modelo
+      ORDER BY unidades DESC, modelo ASC
+    ''');
   }
 
   // ========== CALCULO ==========
@@ -598,15 +624,15 @@ class DatabaseHelper {
     if (desde != null && hasta != null) {
       final desdeStr = desde.toIso8601String().substring(0, 10);
       final hastaStr = hasta.toIso8601String().substring(0, 10);
-      where = 'WHERE date(c.created_at) BETWEEN ? AND ?';
+      where = "WHERE date(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [desdeStr, hastaStr];
     } else if (desde != null) {
       final desdeStr = desde.toIso8601String().substring(0, 10);
-      where = 'WHERE date(c.created_at) >= ?';
+      where = "WHERE date(c.created_at, 'localtime') >= ?";
       args = [desdeStr];
     } else if (hasta != null) {
       final hastaStr = hasta.toIso8601String().substring(0, 10);
-      where = 'WHERE date(c.created_at) <= ?';
+      where = "WHERE date(c.created_at, 'localtime') <= ?";
       args = [hastaStr];
     }
 
@@ -635,16 +661,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND date(c.created_at) BETWEEN ? AND ?';
+      where += " AND date(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 10),
         hasta.toIso8601String().substring(0, 10),
       ];
     } else if (desde != null) {
-      where += ' AND date(c.created_at) >= ?';
+      where += " AND date(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 10)];
     } else if (hasta != null) {
-      where += ' AND date(c.created_at) <= ?';
+      where += " AND date(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 10)];
     }
 
@@ -690,16 +716,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND date(c.created_at) BETWEEN ? AND ?';
+      where += " AND date(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 10),
         hasta.toIso8601String().substring(0, 10),
       ];
     } else if (desde != null) {
-      where += ' AND date(c.created_at) >= ?';
+      where += " AND date(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 10)];
     } else if (hasta != null) {
-      where += ' AND date(c.created_at) <= ?';
+      where += " AND date(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 10)];
     }
 
@@ -728,16 +754,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND date(c.created_at) BETWEEN ? AND ?';
+      where += " AND date(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 10),
         hasta.toIso8601String().substring(0, 10),
       ];
     } else if (desde != null) {
-      where += ' AND date(c.created_at) >= ?';
+      where += " AND date(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 10)];
     } else if (hasta != null) {
-      where += ' AND date(c.created_at) <= ?';
+      where += " AND date(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 10)];
     }
 
@@ -769,16 +795,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where = 'WHERE datetime(c.created_at) BETWEEN ? AND ?';
+      where = "WHERE datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where = 'WHERE datetime(c.created_at) >= ?';
+      where = "WHERE datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where = 'WHERE datetime(c.created_at) <= ?';
+      where = "WHERE datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
@@ -807,16 +833,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
@@ -862,16 +888,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
@@ -900,16 +926,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
@@ -930,13 +956,9 @@ class DatabaseHelper {
   }
 
   // ============================================================
-  // UNIDADES POR HORA (con filtro de rango fecha/hora)
+  // UNIDADES POR HORA
   // ============================================================
 
-  /// Resumen por hora en un rango de fechas/horas.
-  /// - **Entradas**: `valor_real < reseta` (sobró)
-  /// - **Salidas**: `valor_real > reseta` (faltó)
-  /// - **Exactos**: `valor_real == reseta`
   Future<List<Map<String, dynamic>>> obtenerResumenPorHora({
     DateTime? desde,
     DateTime? hasta,
@@ -947,22 +969,22 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
     return await db.rawQuery('''
       SELECT 
-        strftime('%Y-%m-%d %H:00:00', c.created_at) AS hora,
+        strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime')) AS hora,
         COUNT(DISTINCT c.id_calculo) AS calculos,
         COUNT(comp.id_componente) AS total_unidades,
         COALESCE(SUM(comp.valor_real), 0) AS total_real,
@@ -973,13 +995,11 @@ class DatabaseHelper {
       FROM calculo c
       INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
       $where
-      GROUP BY strftime('%Y-%m-%d %H:00:00', c.created_at)
+      GROUP BY strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime'))
       ORDER BY hora DESC
     ''', args);
   }
 
-  /// ✅ NUEVO: Resumen por hora CON detalle de vehículos involucrados.
-  /// Devuelve cada hora con la lista `vehiculos` en su interior.
   Future<List<Map<String, dynamic>>> obtenerResumenPorHoraConDetalle({
     DateTime? desde,
     DateTime? hasta,
@@ -990,23 +1010,22 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
-    // 1) Resumen por hora
     final resumen = await db.rawQuery('''
       SELECT 
-        strftime('%Y-%m-%d %H:00:00', c.created_at) AS hora,
+        strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime')) AS hora,
         COUNT(DISTINCT c.id_calculo) AS calculos,
         COUNT(comp.id_componente) AS total_unidades,
         COALESCE(SUM(comp.valor_real), 0) AS total_real,
@@ -1017,11 +1036,10 @@ class DatabaseHelper {
       FROM calculo c
       INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
       $where
-      GROUP BY strftime('%Y-%m-%d %H:00:00', c.created_at)
+      GROUP BY strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime'))
       ORDER BY hora DESC
     ''', args);
 
-    // 2) Para cada hora, traer los vehículos involucrados
     final List<Map<String, dynamic>> resultado = [];
 
     for (final bloque in resumen) {
@@ -1034,6 +1052,9 @@ class DatabaseHelper {
         continue;
       }
       final horaFin = horaInicio.add(const Duration(hours: 1));
+
+      final horaInicioStr = horaInicio.toIso8601String().substring(0, 19);
+      final horaFinStr = horaFin.toIso8601String().substring(0, 19);
 
       final detalle = await db.rawQuery('''
         SELECT 
@@ -1050,25 +1071,143 @@ class DatabaseHelper {
         INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
         WHERE comp.valor_real IS NOT NULL 
           AND comp.valor_real > 0
-          AND datetime(c.created_at) >= ?
-          AND datetime(c.created_at) < ?
+          AND datetime(c.created_at, 'localtime') >= ?
+          AND datetime(c.created_at, 'localtime') < ?
         GROUP BY v.id_vehiculo, v.modelo
         ORDER BY unidades DESC
-      ''', [
-        horaInicio.toIso8601String().substring(0, 19),
-        horaFin.toIso8601String().substring(0, 19),
-      ]);
+      ''', [horaInicioStr, horaFinStr]);
+
+      final List<Map<String, dynamic>> vehiculosConComponentes = [];
+
+      for (final v in detalle) {
+        final idVehiculo = v['id_vehiculo'];
+
+        final componentes = await db.rawQuery('''
+          SELECT 
+            comp.nombre,
+            COUNT(comp.id_componente) AS veces_usado,
+            COALESCE(SUM(comp.valor_real), 0) AS cantidad_real,
+            COALESCE(SUM(comp.reseta), 0) AS cantidad_teorico,
+            (COALESCE(SUM(comp.valor_real), 0) - COALESCE(SUM(comp.reseta), 0)) AS diferencia
+          FROM calculo c
+          INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
+          WHERE c.id_vehiculo = ?
+            AND comp.valor_real IS NOT NULL 
+            AND comp.valor_real > 0
+            AND datetime(c.created_at, 'localtime') >= ?
+            AND datetime(c.created_at, 'localtime') < ?
+          GROUP BY comp.nombre
+          ORDER BY cantidad_real DESC
+        ''', [idVehiculo, horaInicioStr, horaFinStr]);
+
+        vehiculosConComponentes.add({
+          ...v,
+          'componentes': componentes,
+        });
+      }
 
       resultado.add({
         ...bloque,
-        'vehiculos': detalle,
+        'vehiculos': vehiculosConComponentes,
       });
     }
 
     return resultado;
   }
 
-  /// Solo las unidades que ENTRARON (sobraron) por hora.
+  /// ✅ NUEVO: Detalle de componentes usados por hora (sin agrupar por vehículo).
+  Future<List<Map<String, dynamic>>> obtenerDetalleComponentesPorHora({
+    DateTime? desde,
+    DateTime? hasta,
+  }) async {
+    final db = await database;
+
+    String where = 'WHERE comp.valor_real IS NOT NULL AND comp.valor_real > 0';
+    List<dynamic> args = [];
+
+    if (desde != null && hasta != null) {
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
+      args = [
+        desde.toIso8601String().substring(0, 19),
+        hasta.toIso8601String().substring(0, 19),
+      ];
+    } else if (desde != null) {
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
+      args = [desde.toIso8601String().substring(0, 19)];
+    } else if (hasta != null) {
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
+      args = [hasta.toIso8601String().substring(0, 19)];
+    }
+
+    // 1) Horas únicas
+    final horas = await db.rawQuery('''
+      SELECT DISTINCT strftime('%Y-%m-%d %H:00:00',
+          datetime(c.created_at, 'localtime')) AS hora
+      FROM calculo c
+      INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
+      $where
+      ORDER BY hora DESC
+    ''', args);
+
+    final List<Map<String, dynamic>> resultado = [];
+
+    for (final h in horas) {
+      final horaRaw = h['hora']?.toString() ?? '';
+      DateTime? horaInicio;
+      try {
+        horaInicio = DateTime.parse(horaRaw);
+      } catch (_) {
+        continue;
+      }
+      final horaFin = horaInicio.add(const Duration(hours: 1));
+
+      final horaInicioStr = horaInicio.toIso8601String().substring(0, 19);
+      final horaFinStr = horaFin.toIso8601String().substring(0, 19);
+
+      // 2) Componentes usados en esa hora
+      final componentes = await db.rawQuery('''
+        SELECT 
+          comp.nombre,
+          COUNT(comp.id_componente) AS veces,
+          COALESCE(SUM(comp.valor_real), 0) AS total_real,
+          COALESCE(SUM(comp.reseta), 0) AS total_teorico,
+          (COALESCE(SUM(comp.valor_real), 0) - COALESCE(SUM(comp.reseta), 0)) AS diferencia,
+          SUM(CASE WHEN comp.valor_real < comp.reseta THEN 1 ELSE 0 END) AS entradas,
+          SUM(CASE WHEN comp.valor_real > comp.reseta THEN 1 ELSE 0 END) AS salidas,
+          SUM(CASE WHEN comp.valor_real = comp.reseta THEN 1 ELSE 0 END) AS exactos
+        FROM calculo c
+        INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
+        WHERE comp.valor_real IS NOT NULL 
+          AND comp.valor_real > 0
+          AND datetime(c.created_at, 'localtime') >= ?
+          AND datetime(c.created_at, 'localtime') < ?
+        GROUP BY comp.nombre
+        ORDER BY total_real DESC
+      ''', [horaInicioStr, horaFinStr]);
+
+      // 3) Vehículos de esa hora
+      final vehiculos = await db.rawQuery('''
+        SELECT DISTINCT v.modelo
+        FROM calculo c
+        INNER JOIN vehiculo v ON v.id_vehiculo = c.id_vehiculo
+        INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
+        WHERE comp.valor_real IS NOT NULL 
+          AND comp.valor_real > 0
+          AND datetime(c.created_at, 'localtime') >= ?
+          AND datetime(c.created_at, 'localtime') < ?
+        ORDER BY v.modelo
+      ''', [horaInicioStr, horaFinStr]);
+
+      resultado.add({
+        'hora': horaRaw,
+        'vehiculos': vehiculos.map((e) => e['modelo'].toString()).toList(),
+        'componentes': componentes,
+      });
+    }
+
+    return resultado;
+  }
+
   Future<List<Map<String, dynamic>>> obtenerEntradasPorHora({
     DateTime? desde,
     DateTime? hasta,
@@ -1079,22 +1218,22 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
     return await db.rawQuery('''
       SELECT 
-        strftime('%Y-%m-%d %H:00:00', c.created_at) AS hora,
+        strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime')) AS hora,
         COUNT(comp.id_componente) AS unidades_entrada,
         COUNT(DISTINCT c.id_calculo) AS calculos,
         COALESCE(SUM(comp.reseta - comp.valor_real), 0) AS total_entrada
@@ -1102,12 +1241,11 @@ class DatabaseHelper {
       INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
       $where
         AND comp.reseta > comp.valor_real
-      GROUP BY strftime('%Y-%m-%d %H:00:00', c.created_at)
+      GROUP BY strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime'))
       ORDER BY hora DESC
     ''', args);
   }
 
-  /// Solo las unidades que SALIERON (faltaron) por hora.
   Future<List<Map<String, dynamic>>> obtenerSalidasPorHora({
     DateTime? desde,
     DateTime? hasta,
@@ -1118,22 +1256,22 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
     return await db.rawQuery('''
       SELECT 
-        strftime('%Y-%m-%d %H:00:00', c.created_at) AS hora,
+        strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime')) AS hora,
         COUNT(comp.id_componente) AS unidades_salida,
         COUNT(DISTINCT c.id_calculo) AS calculos,
         COALESCE(SUM(comp.valor_real - comp.reseta), 0) AS total_salida
@@ -1141,12 +1279,11 @@ class DatabaseHelper {
       INNER JOIN componente comp ON comp.id_calculo = c.id_calculo
       $where
         AND comp.reseta < comp.valor_real
-      GROUP BY strftime('%Y-%m-%d %H:00:00', c.created_at)
+      GROUP BY strftime('%Y-%m-%d %H:00:00', datetime(c.created_at, 'localtime'))
       ORDER BY hora DESC
     ''', args);
   }
 
-  /// Resumen total en un rango (sin desglose por hora).
   Future<Map<String, dynamic>> obtenerResumenDelDia({
     DateTime? desde,
     DateTime? hasta,
@@ -1157,16 +1294,16 @@ class DatabaseHelper {
     List<dynamic> args = [];
 
     if (desde != null && hasta != null) {
-      where += ' AND datetime(c.created_at) BETWEEN ? AND ?';
+      where += " AND datetime(c.created_at, 'localtime') BETWEEN ? AND ?";
       args = [
         desde.toIso8601String().substring(0, 19),
         hasta.toIso8601String().substring(0, 19),
       ];
     } else if (desde != null) {
-      where += ' AND datetime(c.created_at) >= ?';
+      where += " AND datetime(c.created_at, 'localtime') >= ?";
       args = [desde.toIso8601String().substring(0, 19)];
     } else if (hasta != null) {
-      where += ' AND datetime(c.created_at) <= ?';
+      where += " AND datetime(c.created_at, 'localtime') <= ?";
       args = [hasta.toIso8601String().substring(0, 19)];
     }
 
@@ -1209,12 +1346,9 @@ class DatabaseHelper {
   }
 
   // ============================================================
-  // DEBUG (temporal, para diagnóstico)
+  // DEBUG
   // ============================================================
 
-  /// ✅ Imprime en consola los últimos 10 componentes guardados
-  /// con sus valores de reseta y valor_real. Útil para diagnosticar
-  /// por qué no se reflejan las unidades ingresadas.
   Future<void> debugUltimosComponentes() async {
     final db = await database;
     final rows = await db.rawQuery('''

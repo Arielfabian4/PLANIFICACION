@@ -5,6 +5,7 @@ import 'package:vehiculos_app/screens/calculos_vehiculo_screen.dart';
 import 'package:vehiculos_app/screens/inventario_screen.dart';
 import 'package:vehiculos_app/screens/consumo_screen.dart';
 import 'package:vehiculos_app/screens/unidades_por_hora_screen.dart';
+import 'package:vehiculos_app/screens/resumen_flota_screen.dart';
 import 'package:vehiculos_app/data/recetas_service.dart';
 import 'package:vehiculos_app/data/datos_modelos.dart';
 import 'package:vehiculos_app/data/productos_service.dart';
@@ -115,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ============================================================
-  // AGREGAR VEHÍCULO
+  // AGREGAR VEHÍCULO (individual)
   // ============================================================
   Future<void> _agregarVehiculo() async {
     String? modeloSeleccionado;
@@ -231,6 +232,382 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (result == true && modeloSeleccionado != null) {
       await _guardarVehiculo(modeloSeleccionado!);
+    }
+  }
+
+  // ============================================================
+  // REGISTRO POR LOTES (modelo + cantidad)
+  // ============================================================
+  Future<void> _agregarVehiculosPorLotes() async {
+    final List<Map<String, dynamic>> lote = [];
+
+    String? modeloSeleccionado;
+    final cantidadController = TextEditingController(text: '1');
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          int totalUnidades = 0;
+          for (final item in lote) {
+            totalUnidades += (item['cantidad'] as int?) ?? 0;
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.playlist_add,
+                    color: Colors.indigo,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Registro por lotes',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: modeloSeleccionado,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: 'Modelo',
+                        hintText: 'Selecciona un modelo',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        prefixIcon: const Icon(Icons.directions_car),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                      ),
+                      items: _modelosDisponibles
+                          .map(
+                            (m) => DropdownMenuItem<String>(
+                              value: m,
+                              child: Text(
+                                m,
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        setStateDialog(() => modeloSeleccionado = v);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: cantidadController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Cantidad',
+                              hintText: 'Ej: 18',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              prefixIcon: const Icon(Icons.numbers),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              final cantidad = int.tryParse(
+                                cantidadController.text.trim(),
+                              );
+
+                              if (modeloSeleccionado == null) {
+                                _showSnackBar(
+                                  'Selecciona un modelo',
+                                  icon: Icons.warning_amber,
+                                  color: Colors.orange,
+                                );
+                                return;
+                              }
+                              if (cantidad == null || cantidad <= 0) {
+                                _showSnackBar(
+                                  'Ingresa una cantidad válida',
+                                  icon: Icons.warning_amber,
+                                  color: Colors.orange,
+                                );
+                                return;
+                              }
+
+                              setStateDialog(() {
+                                final idx = lote.indexWhere(
+                                  (e) => e['modelo'] == modeloSeleccionado,
+                                );
+                                if (idx >= 0) {
+                                  lote[idx] = {
+                                    'modelo': modeloSeleccionado,
+                                    'cantidad': (lote[idx]['cantidad'] as int) +
+                                        cantidad,
+                                  };
+                                } else {
+                                  lote.add({
+                                    'modelo': modeloSeleccionado,
+                                    'cantidad': cantidad,
+                                  });
+                                }
+                                modeloSeleccionado = null;
+                                cantidadController.text = '1';
+                              });
+                            },
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text(
+                              'Agregar',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.list_alt, size: 16),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Lote actual',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '$totalUnidades ${totalUnidades == 1 ? 'unidad' : 'unidades'}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.indigo.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (lote.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.inbox_outlined,
+                              size: 32,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Aún no has agregado modelos\nSelecciona uno y presiona "Agregar"',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...List.generate(lote.length, (i) {
+                        final item = lote[i];
+                        final modelo = item['modelo'] as String;
+                        final cant = item['cantidad'] as int;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.shade50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.indigo.shade100),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.directions_car,
+                                size: 18,
+                                color: Colors.indigo,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  modelo,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border:
+                                      Border.all(color: Colors.indigo.shade200),
+                                ),
+                                child: Text(
+                                  '×$cant',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo.shade800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                  color: Colors.red.shade400,
+                                ),
+                                onPressed: () {
+                                  setStateDialog(() {
+                                    lote.removeAt(i);
+                                  });
+                                },
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                tooltip: 'Quitar',
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton.icon(
+                onPressed: lote.isEmpty
+                    ? null
+                    : () => Navigator.pop(dialogContext, true),
+                icon: const Icon(Icons.check, size: 18),
+                label: Text(
+                  lote.isEmpty ? 'Guardar' : 'Guardar $totalUnidades',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result == true && lote.isNotEmpty) {
+      final List<String> modelosExpandidos = [];
+      for (final item in lote) {
+        final modelo = item['modelo'] as String;
+        final cant = item['cantidad'] as int;
+        for (int i = 0; i < cant; i++) {
+          modelosExpandidos.add(modelo);
+        }
+      }
+      await _guardarVehiculosPorLotes(modelosExpandidos);
+    }
+  }
+
+  Future<void> _guardarVehiculosPorLotes(List<String> modelos) async {
+    if (modelos.isEmpty) return;
+
+    try {
+      await _db.insertVehiculosPorLotes(modelos);
+      await _loadVehiculos();
+
+      _showSnackBar(
+        '${modelos.length} ${modelos.length == 1 ? 'vehículo registrado' : 'vehículos registrados'}',
+        icon: Icons.check_circle,
+        color: Colors.green,
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      _showSnackBar(
+        'Error al guardar: $e',
+        icon: Icons.error,
+        color: Colors.red,
+        duration: const Duration(seconds: 3),
+      );
     }
   }
 
@@ -1671,12 +2048,15 @@ class _HomeScreenState extends State<HomeScreen> {
       );
   }
 
+  /// Formatea la fecha convirtiendo UTC → hora local si aplica.
   String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day/$month/${date.year} · $hour:$minute';
+    final local = date.isUtc ? date.toLocal() : date;
+
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/${local.year} · $hour:$minute';
   }
 
   // ============================================================
@@ -1780,7 +2160,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      // Avatar
                       Container(
                         width: 58,
                         height: 58,
@@ -1826,7 +2205,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Mini stats dentro del header
                   Row(
                     children: [
                       _buildHeaderStat(
@@ -1887,6 +2265,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.pop(context);
                       _agregarVehiculo();
                     },
+                  ),
+                  _buildHonorItem(
+                    icon: Icons.playlist_add,
+                    title: 'Registro por lotes',
+                    subtitle: 'Modelo + cantidad · varios a la vez',
+                    color: const Color(0xFF3F51B5),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _agregarVehiculosPorLotes();
+                    },
+                  ),
+                  _buildHonorItem(
+                    icon: Icons.bar_chart,
+                    title: 'Resumen de flota',
+                    subtitle: 'Conteo por modelo y unidades',
+                    color: const Color(0xFF009688),
+                    onTap: () => _navegarA(const ResumenFlotaScreen()),
                   ),
                   _buildHonorItem(
                     icon: Icons.list_alt,
@@ -2076,7 +2471,6 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
-                // Ícono en burbuja
                 Container(
                   width: 42,
                   height: 42,
@@ -2087,7 +2481,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Icon(icon, color: color, size: 22),
                 ),
                 const SizedBox(width: 14),
-                // Texto
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

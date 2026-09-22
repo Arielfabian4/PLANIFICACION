@@ -27,6 +27,7 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Convertir el día seleccionado en rango desde/hasta
       final desde = DateTime(
         _diaSeleccionado.year,
         _diaSeleccionado.month,
@@ -44,7 +45,7 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
         59,
       );
 
-      final data = await db.obtenerResumenPorHoraConDetalle(
+      final data = await db.obtenerResumenPorHora(
         desde: desde,
         hasta: hasta,
       );
@@ -211,7 +212,10 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [primary, primary.withValues(alpha: 0.8)],
+          colors: [
+            primary,
+            primary.withValues(alpha: 0.8),
+          ],
         ),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -275,7 +279,10 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+          ),
         ),
       ],
     );
@@ -287,7 +294,11 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.schedule, size: 80, color: Colors.grey.shade300),
+            Icon(
+              Icons.schedule,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
             Text(
               'Sin movimientos este día',
@@ -317,13 +328,16 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
   }
 
   Widget _buildHoraCard(Map<String, dynamic> item) {
+    // ✅ Ahora la hora viene en formato "YYYY-MM-DD HH:00:00"
     final horaRaw = item['hora']?.toString() ?? '';
     String horaBonita = horaRaw;
 
+    // Extraer solo "HH:00" del formato completo
     try {
       final dt = DateTime.parse(horaRaw);
       horaBonita = DateFormat('HH:00').format(dt);
     } catch (_) {
+      // Si falla, intentar extraer los últimos caracteres
       if (horaRaw.length >= 13) {
         horaBonita = '${horaRaw.substring(11, 13)}:00';
       }
@@ -336,9 +350,7 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
     final totalReal = (item['total_real'] as num?)?.toDouble() ?? 0.0;
     final totalTeorico = (item['total_teorico'] as num?)?.toDouble() ?? 0.0;
 
-    final List<Map<String, dynamic>> vehiculos =
-        (item['vehiculos'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-
+    // Color según dominancia
     Color colorHora;
     if (entradas > salidas) {
       colorHora = Colors.green.shade700;
@@ -355,48 +367,57 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: Colors.grey.shade200),
       ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-          leading: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: colorHora.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: colorHora.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Fila 1: Hora + contador unidades
+            Row(
               children: [
-                Icon(Icons.access_time, size: 14, color: colorHora),
-                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorHora.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colorHora.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: colorHora,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        horaBonita,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: colorHora,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
                 Text(
-                  horaBonita,
-                  style: TextStyle(
+                  '$unidades unidades',
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: colorHora,
+                    color: Colors.black87,
                   ),
                 ),
               ],
             ),
-          ),
-          title: Text(
-            '$unidades unidades',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          subtitle: Text(
-            '${vehiculos.length} ${vehiculos.length == 1 ? 'vehículo' : 'vehículos'}',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-          ),
-          children: [
-            // Resumen hora
+            const SizedBox(height: 10),
+
+            // Fila 2: Cálculos / Entradas / Salidas
             Row(
               children: [
                 Expanded(
@@ -425,9 +446,12 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
                 ),
               ],
             ),
+
             const SizedBox(height: 10),
             const Divider(height: 1),
             const SizedBox(height: 10),
+
+            // Fila 3: Totales L
             Row(
               children: [
                 Expanded(
@@ -458,151 +482,8 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
                 ),
               ],
             ),
-
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
-
-            // Detalle por vehículo
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Detalle por vehículo',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-
-            if (vehiculos.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Sin vehículos en esta hora',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              )
-            else
-              ...vehiculos.map((v) {
-                final modelo = v['modelo']?.toString() ?? '-';
-                final u = (v['unidades'] as num?)?.toInt() ?? 0;
-                final e = (v['entradas'] as num?)?.toInt() ?? 0;
-                final s = (v['salidas'] as num?)?.toInt() ?? 0;
-                final tr = (v['total_real'] as num?)?.toDouble() ?? 0.0;
-                final tt = (v['total_teorico'] as num?)?.toDouble() ?? 0.0;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.directions_car,
-                            size: 16,
-                            color: Colors.blueGrey,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              modelo,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '$u uds',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          _buildChip(
-                            Icons.arrow_downward,
-                            'E: $e',
-                            Colors.green.shade700,
-                          ),
-                          _buildChip(
-                            Icons.arrow_upward,
-                            'S: $s',
-                            Colors.orange.shade700,
-                          ),
-                          _buildChip(
-                            Icons.water_drop,
-                            'R: ${tr.toStringAsFixed(2)}',
-                            Colors.orange.shade800,
-                          ),
-                          _buildChip(
-                            Icons.science_outlined,
-                            'T: ${tt.toStringAsFixed(2)}',
-                            Colors.blue.shade700,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildChip(IconData icon, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: color),
-          const SizedBox(width: 3),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -627,7 +508,10 @@ class _UnidadesPorHoraScreenState extends State<UnidadesPorHoraScreen> {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade600,
+          ),
         ),
       ],
     );

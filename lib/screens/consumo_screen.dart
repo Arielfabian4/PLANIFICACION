@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../database/database_helper.dart';
 import '../utils/exportar_excel_helper.dart';
+import '../theme/ciauto_theme.dart';
 
 class ConsumoScreen extends StatefulWidget {
   const ConsumoScreen({super.key});
@@ -19,11 +20,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   List<Map<String, dynamic>> _calculosFiltrados = [];
   List<String> _vehiculos = [];
 
-  // Totales
   List<Map<String, dynamic>> _totalesPorComponente = [];
   List<Map<String, dynamic>> _totalesPorVehiculo = [];
   List<Map<String, dynamic>> _consumoPorHora = [];
-  int _tabSeleccionada = 0; // 0 = componente, 1 = vehículo, 2 = por hora
+  List<Map<String, dynamic>> _detallePorHora = [];
+  int _tabSeleccionada = 0;
 
   Map<String, dynamic> _resumenGeneral = {
     'total_real': 0.0,
@@ -36,11 +37,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   String _filtroVehiculo = 'Todos';
   bool _cargando = true;
 
-  // Filtro por fecha
   DateTime? _fechaDesde;
   DateTime? _fechaHasta;
-
-  // Filtro por hora
   TimeOfDay? _horaDesde;
   TimeOfDay? _horaHasta;
 
@@ -56,9 +54,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     required bool esInicio,
   }) {
     if (fecha == null && hora == null) return null;
-
     final base = fecha ?? DateTime.now();
-
     if (hora == null) {
       return esInicio
           ? DateTime(base.year, base.month, base.day, 0, 0, 0)
@@ -72,16 +68,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     setState(() => _cargando = true);
 
     try {
-      final desdeCompleto = _combinarFechaHora(
-        _fechaDesde,
-        _horaDesde,
-        esInicio: true,
-      );
-      final hastaCompleto = _combinarFechaHora(
-        _fechaHasta,
-        _horaHasta,
-        esInicio: false,
-      );
+      final desdeCompleto =
+          _combinarFechaHora(_fechaDesde, _horaDesde, esInicio: true);
+      final hastaCompleto =
+          _combinarFechaHora(_fechaHasta, _horaHasta, esInicio: false);
 
       final datos = await db.obtenerCalculosConVehiculoPorFechaHora(
         desde: desdeCompleto,
@@ -103,6 +93,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         desde: desdeCompleto,
         hasta: hastaCompleto,
       );
+      final detalleHora = await db.obtenerDetalleComponentesPorHora(
+        desde: desdeCompleto,
+        hasta: hastaCompleto,
+      );
 
       final vehiculosSet = <String>{};
       for (final c in datos) {
@@ -113,7 +107,6 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       }
 
       if (!mounted) return;
-
       setState(() {
         _calculos = datos;
         _calculosFiltrados = _aplicarFiltroVehiculo(datos, _filtroVehiculo);
@@ -122,6 +115,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         _totalesPorComponente = totalesComp;
         _totalesPorVehiculo = totalesVeh;
         _consumoPorHora = porHora;
+        _detallePorHora = detalleHora;
         _cargando = false;
       });
     } catch (e) {
@@ -132,9 +126,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   List<Map<String, dynamic>> _aplicarFiltroVehiculo(
-    List<Map<String, dynamic>> datos,
-    String filtro,
-  ) {
+      List<Map<String, dynamic>> datos, String filtro) {
     if (filtro == 'Todos') return datos;
     return datos.where((c) => c['nombreVehiculo'] == filtro).toList();
   }
@@ -159,7 +151,6 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
     );
-
     if (picked == null) return;
 
     setState(() {
@@ -175,7 +166,6 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         }
       }
     });
-
     await _cargarDatos();
   }
 
@@ -189,7 +179,6 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
     );
-
     if (picked == null) return;
 
     setState(() {
@@ -199,7 +188,6 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         _horaHasta = picked;
       }
     });
-
     await _cargarDatos();
   }
 
@@ -281,33 +269,31 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     final hastaFecha = _fechaHasta != null
         ? DateFormat('dd/MM/yyyy').format(_fechaHasta!)
         : 'Hoy';
-
     final desdeHora = _horaDesde != null
         ? ' ${_horaDesde!.hour.toString().padLeft(2, '0')}:${_horaDesde!.minute.toString().padLeft(2, '0')}'
         : '';
     final hastaHora = _horaHasta != null
         ? ' ${_horaHasta!.hour.toString().padLeft(2, '0')}:${_horaHasta!.minute.toString().padLeft(2, '0')}'
         : '';
-
     return '$desdeFecha$desdeHora → $hastaFecha$hastaHora';
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: CiautoColors.light,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: colorScheme.primary,
+        backgroundColor: CiautoColors.red,
         foregroundColor: Colors.white,
-        title: const Text(
-          'Consumo realizado',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: const Row(
+          children: [
+            Icon(Icons.local_gas_station, color: Colors.white),
+            SizedBox(width: 8),
+            Text('Consumo', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
         ),
         actions: [
-          // ✅ BOTÓN EXPORTAR A EXCEL
           IconButton(
             tooltip: 'Exportar a Excel',
             icon: const Icon(Icons.table_chart_outlined),
@@ -322,12 +308,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       ),
       body: SafeArea(
         child: _cargando
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: CiautoColors.red),
+              )
             : RefreshIndicator(
+                color: CiautoColors.red,
                 onRefresh: _cargarDatos,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),
@@ -335,17 +324,17 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildFiltroFechaCard(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           _buildResumenCard(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           _buildConsumoGeneralCard(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           _buildResumenEntradasSalidas(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           _buildListadoTotales(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           _buildFiltroCard(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           _buildListaCalculos(),
                           const SizedBox(height: 20),
                         ],
@@ -359,7 +348,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
-  // EXPORTAR A EXCEL
+  // EXPORTAR
   // ============================================================
 
   Future<void> _mostrarDialogoExportar() async {
@@ -369,7 +358,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.table_chart, color: Colors.green),
+            Icon(Icons.table_chart, color: CiautoColors.red),
             SizedBox(width: 8),
             Text('Exportar a Excel'),
           ],
@@ -397,7 +386,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
               'Reporte completo',
               'Todo en un solo archivo con varias hojas',
               Icons.description_outlined,
-              Colors.red,
+              CiautoColors.red,
               'todo',
               dialogContext,
             ),
@@ -434,17 +423,14 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         ),
         child: Icon(icono, color: color, size: 22),
       ),
-      title: Text(
-        titulo,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-      ),
+      title: Text(titulo,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
       subtitle: Text(subtitulo, style: const TextStyle(fontSize: 12)),
       onTap: () => Navigator.pop(dialogContext, valor),
     );
   }
 
   Future<void> _exportarYCompartir(String tipo) async {
-    // Mostrar indicador de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -455,7 +441,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
+                CircularProgressIndicator(color: CiautoColors.red),
                 SizedBox(height: 12),
                 Text('Generando Excel...'),
               ],
@@ -467,7 +453,6 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
 
     try {
       File? archivo;
-
       switch (tipo) {
         case 'calculos':
           archivo = await excelHelper.exportarCalculos();
@@ -479,24 +464,13 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
           archivo = await excelHelper.exportarTodo();
           break;
       }
-
-      // Cerrar el diálogo de carga
       if (mounted) Navigator.pop(context);
-
       if (archivo == null) {
-        _mostrarMensaje(
-          'No hay datos para exportar',
-          esError: true,
-        );
+        _mostrarMensaje('No hay datos para exportar', esError: true);
         return;
       }
-
-      // Compartir el archivo
       await excelHelper.compartirExcel(archivo);
-
-      if (mounted) {
-        _mostrarMensaje('✅ Excel generado y compartido');
-      }
+      if (mounted) _mostrarMensaje('✅ Excel generado y compartido');
     } catch (e) {
       if (mounted) Navigator.pop(context);
       _mostrarMensaje('Error al exportar: $e', esError: true);
@@ -504,134 +478,133 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
-  // FILTRO POR FECHA Y HORA
+  // FILTRO FECHA/HORA
   // ============================================================
 
   Widget _buildFiltroFechaCard() {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _hayFiltroFecha
-                        ? Colors.blue.shade50
-                        : Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.date_range,
-                    color: _hayFiltroFecha
-                        ? Colors.blue.shade700
-                        : Colors.grey.shade600,
-                    size: 22,
-                  ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CiautoColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _hayFiltroFecha
+                      ? CiautoColors.redLight
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Filtrar por fecha y hora',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _rangoFechasTexto,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _hayFiltroFecha
-                              ? Colors.blue.shade700
-                              : Colors.grey.shade600,
-                          fontWeight: _hayFiltroFecha
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: Icon(
+                  Icons.date_range,
+                  color: _hayFiltroFecha ? CiautoColors.red : CiautoColors.gray,
+                  size: 22,
                 ),
-                if (_hayFiltroFecha)
-                  IconButton(
-                    tooltip: 'Limpiar filtro',
-                    icon: const Icon(Icons.close, size: 20),
-                    color: Colors.red.shade700,
-                    onPressed: _limpiarFiltros,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildChipRapido('Hoy'),
-                  const SizedBox(width: 6),
-                  _buildChipRapido('Semana'),
-                  const SizedBox(width: 6),
-                  _buildChipRapido('Mes'),
-                  const SizedBox(width: 6),
-                  _buildChipRapido('Año'),
-                  const SizedBox(width: 6),
-                  _buildChipRapido('Todo'),
-                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Filtrar por fecha y hora',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: CiautoColors.dark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _rangoFechasTexto,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _hayFiltroFecha
+                            ? CiautoColors.red
+                            : CiautoColors.gray,
+                        fontWeight: _hayFiltroFecha
+                            ? FontWeight.w700
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_hayFiltroFecha)
+                IconButton(
+                  tooltip: 'Limpiar filtro',
+                  icon: const Icon(Icons.close, size: 20),
+                  color: CiautoColors.red,
+                  onPressed: _limpiarFiltros,
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: [
-                Expanded(
-                  child: _buildFechaButton(
-                    label: 'Desde (fecha)',
-                    fecha: _fechaDesde,
-                    onTap: () => _seleccionarFecha(true),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildFechaButton(
-                    label: 'Hasta (fecha)',
-                    fecha: _fechaHasta,
-                    onTap: () => _seleccionarFecha(false),
-                  ),
-                ),
+                _buildChipRapido('Hoy'),
+                const SizedBox(width: 6),
+                _buildChipRapido('Semana'),
+                const SizedBox(width: 6),
+                _buildChipRapido('Mes'),
+                const SizedBox(width: 6),
+                _buildChipRapido('Año'),
+                const SizedBox(width: 6),
+                _buildChipRapido('Todo'),
               ],
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildHoraButton(
-                    label: 'Desde (hora)',
-                    hora: _horaDesde,
-                    onTap: () => _seleccionarHora(true),
-                  ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFechaButton(
+                  label: 'Desde (fecha)',
+                  fecha: _fechaDesde,
+                  onTap: () => _seleccionarFecha(true),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildHoraButton(
-                    label: 'Hasta (hora)',
-                    hora: _horaHasta,
-                    onTap: () => _seleccionarHora(false),
-                  ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildFechaButton(
+                  label: 'Hasta (fecha)',
+                  fecha: _fechaHasta,
+                  onTap: () => _seleccionarFecha(false),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildHoraButton(
+                  label: 'Desde (hora)',
+                  hora: _horaDesde,
+                  onTap: () => _seleccionarHora(true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildHoraButton(
+                  label: 'Hasta (hora)',
+                  hora: _horaHasta,
+                  onTap: () => _seleccionarHora(false),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -643,18 +616,18 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: activo ? Colors.blue.shade700 : Colors.grey.shade100,
+          color: activo ? CiautoColors.red : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: activo ? Colors.blue.shade700 : Colors.grey.shade300,
+            color: activo ? CiautoColors.red : Colors.grey.shade300,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: activo ? Colors.white : Colors.grey.shade700,
+            fontWeight: FontWeight.w700,
+            color: activo ? Colors.white : CiautoColors.gray,
           ),
         ),
       ),
@@ -710,10 +683,12 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: tieneFecha ? Colors.blue.shade50 : Colors.grey.shade50,
+          color: tieneFecha ? CiautoColors.redLight : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: tieneFecha ? Colors.blue.shade200 : Colors.grey.shade300,
+            color: tieneFecha
+                ? CiautoColors.red.withValues(alpha: 0.4)
+                : Colors.grey.shade300,
           ),
         ),
         child: Row(
@@ -721,7 +696,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Icon(
               Icons.calendar_today_outlined,
               size: 16,
-              color: tieneFecha ? Colors.blue.shade700 : Colors.grey.shade600,
+              color: tieneFecha ? CiautoColors.red : CiautoColors.gray,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -732,10 +707,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     label,
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: tieneFecha
-                          ? Colors.blue.shade700
-                          : Colors.grey.shade600,
+                      fontWeight: FontWeight.w700,
+                      color: tieneFecha ? CiautoColors.red : CiautoColors.gray,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -746,7 +719,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: tieneFecha ? Colors.black87 : Colors.grey.shade500,
+                      color:
+                          tieneFecha ? CiautoColors.dark : Colors.grey.shade500,
                     ),
                   ),
                 ],
@@ -770,10 +744,12 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: tieneHora ? Colors.purple.shade50 : Colors.grey.shade50,
+          color: tieneHora ? CiautoColors.redLight : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: tieneHora ? Colors.purple.shade200 : Colors.grey.shade300,
+            color: tieneHora
+                ? CiautoColors.red.withValues(alpha: 0.4)
+                : Colors.grey.shade300,
           ),
         ),
         child: Row(
@@ -781,7 +757,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Icon(
               Icons.access_time,
               size: 16,
-              color: tieneHora ? Colors.purple.shade700 : Colors.grey.shade600,
+              color: tieneHora ? CiautoColors.red : CiautoColors.gray,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -792,10 +768,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     label,
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: tieneHora
-                          ? Colors.purple.shade700
-                          : Colors.grey.shade600,
+                      fontWeight: FontWeight.w700,
+                      color: tieneHora ? CiautoColors.red : CiautoColors.gray,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -806,7 +780,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: tieneHora ? Colors.black87 : Colors.grey.shade500,
+                      color:
+                          tieneHora ? CiautoColors.dark : Colors.grey.shade500,
                     ),
                   ),
                 ],
@@ -819,87 +794,83 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
-  // RESUMEN DE CÁLCULOS
+  // RESUMEN
   // ============================================================
 
   Widget _buildResumenCard() {
-    final colorScheme = Theme.of(context).colorScheme;
     final colorTotal = _diferenciaTotal > 0
         ? Colors.orange.shade700
         : _diferenciaTotal < 0
             ? Colors.green.shade700
-            : Colors.grey.shade700;
+            : CiautoColors.gray;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.local_gas_station_outlined,
-                    color: colorScheme.primary,
-                    size: 28,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CiautoColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: CiautoColors.redLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.local_gas_station_outlined,
+                  color: CiautoColors.red,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'Resumen de cálculos',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: CiautoColors.dark,
                   ),
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Text(
-                    'Resumen de cálculos',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: 160,
+                child: _buildMetrica(
+                  'Cálculos',
+                  '$_cantidadCalculos',
+                  Icons.calculate_outlined,
+                  CiautoColors.red,
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                SizedBox(
-                  width: 160,
-                  child: _buildMetrica(
-                    'Cálculos',
-                    '$_cantidadCalculos',
-                    Icons.calculate_outlined,
-                    Colors.blue.shade700,
-                  ),
+              ),
+              SizedBox(
+                width: 160,
+                child: _buildMetrica(
+                  'Diferencia total (L)',
+                  _diferenciaTotal.toStringAsFixed(2),
+                  Icons.trending_up,
+                  colorTotal,
                 ),
-                SizedBox(
-                  width: 160,
-                  child: _buildMetrica(
-                    'Diferencia total (L)',
-                    _diferenciaTotal.toStringAsFixed(2),
-                    Icons.trending_up,
-                    colorTotal,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
-
-  // ============================================================
-  // CONSUMO GENERAL
-  // ============================================================
 
   Widget _buildConsumoGeneralCard() {
     final colorReal = Colors.orange.shade700;
@@ -908,154 +879,143 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         ? Colors.red.shade700
         : _diferenciaGeneral < 0
             ? Colors.green.shade700
-            : Colors.grey.shade700;
+            : CiautoColors.gray;
 
     final totalComponentes = _resumenGeneral['total_componentes'] ?? 0;
     final totalCalculos = _resumenGeneral['total_calculos'] ?? 0;
     final totalVehiculos = _resumenGeneral['total_vehiculos'] ?? 0;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.analytics_outlined,
-                    color: Colors.orange.shade700,
-                    size: 28,
-                  ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CiautoColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: CiautoColors.redLight,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Consumo general acumulado',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Total de todos los cálculos registrados',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
+                child: const Icon(
+                  Icons.analytics_outlined,
+                  color: CiautoColors.red,
+                  size: 28,
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMetricaGrande(
-                    'CONSUMO REAL',
-                    _totalReal.toStringAsFixed(2),
-                    'L',
-                    Icons.water_drop,
-                    colorReal,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildMetricaGrande(
-                    'CONSUMO TEÓRICO',
-                    _totalTeorico.toStringAsFixed(2),
-                    'L',
-                    Icons.science_outlined,
-                    colorTeorico,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorDiferencia.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: colorDiferencia.withValues(alpha: 0.25)),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.compare_arrows, color: colorDiferencia, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Diferencia (Real - Teórico)',
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Consumo general acumulado',
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade800,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: CiautoColors.dark,
                       ),
                     ),
-                  ),
-                  Text(
-                    '${_diferenciaGeneral >= 0 ? '+' : ''}${_diferenciaGeneral.toStringAsFixed(2)} L',
+                    SizedBox(height: 4),
+                    Text(
+                      'Total de todos los cálculos registrados',
+                      style: TextStyle(fontSize: 12, color: CiautoColors.gray),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMetricaGrande(
+                  'CONSUMO REAL',
+                  _totalReal.toStringAsFixed(2),
+                  'L',
+                  Icons.water_drop,
+                  colorReal,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMetricaGrande(
+                  'CONSUMO TEÓRICO',
+                  _totalTeorico.toStringAsFixed(2),
+                  'L',
+                  Icons.science_outlined,
+                  colorTeorico,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorDiferencia.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  Border.all(color: colorDiferencia.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.compare_arrows, color: colorDiferencia, size: 20),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Diferencia (Real - Teórico)',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: colorDiferencia,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: CiautoColors.dark,
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildMiniMetrica(
-                      Icons.directions_car, '$totalVehiculos', 'Vehículos'),
-                  Container(
-                    width: 1,
-                    height: 30,
-                    color: Colors.grey.shade300,
+                ),
+                Text(
+                  '${_diferenciaGeneral >= 0 ? '+' : ''}${_diferenciaGeneral.toStringAsFixed(2)} L',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorDiferencia,
                   ),
-                  _buildMiniMetrica(
-                      Icons.calculate, '$totalCalculos', 'Cálculos'),
-                  Container(
-                    width: 1,
-                    height: 30,
-                    color: Colors.grey.shade300,
-                  ),
-                  _buildMiniMetrica(
-                      Icons.inventory_2, '$totalComponentes', 'Componentes'),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildMiniMetrica(
+                    Icons.directions_car, '$totalVehiculos', 'Vehículos'),
+                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                _buildMiniMetrica(
+                    Icons.calculate, '$totalCalculos', 'Cálculos'),
+                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                _buildMiniMetrica(
+                    Icons.inventory_2, '$totalComponentes', 'Componentes'),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
-
-  // ============================================================
-  // MOVIMIENTO DE UNIDADES
-  // ============================================================
 
   Widget _buildResumenEntradasSalidas() {
     int entradas = 0;
@@ -1070,204 +1030,185 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       exactos += (h['exactos'] as num?)?.toInt() ?? 0;
     }
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.purple.shade50,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.inventory_2_outlined,
-                    color: Colors.purple.shade700,
-                    size: 28,
-                  ),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CiautoColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: CiautoColors.redLight,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Movimiento de unidades',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                child: const Icon(
+                  Icons.inventory_2_outlined,
+                  color: CiautoColors.red,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Movimiento de unidades',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: CiautoColors.dark,
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Unidades consumidas, entradas y salidas por hora',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Unidades consumidas, entradas y salidas por hora',
+                      style: TextStyle(fontSize: 12, color: CiautoColors.gray),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildMetricaResponsive(
-                  'Unidades totales',
-                  '$unidades',
-                  Icons.inventory,
-                  Colors.purple.shade700,
-                ),
-                _buildMetricaResponsive(
-                  'Entradas (sobró)',
-                  '+$entradas',
-                  Icons.arrow_downward,
-                  Colors.green.shade700,
-                ),
-                _buildMetricaResponsive(
-                  'Salidas (faltó)',
-                  '-$salidas',
-                  Icons.arrow_upward,
-                  Colors.red.shade700,
-                ),
-                _buildMetricaResponsive(
-                  'Exactos',
-                  '$exactos',
-                  Icons.check_circle_outline,
-                  Colors.grey.shade700,
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildMetricaResponsive('Unidades totales', '$unidades',
+                  Icons.inventory, CiautoColors.dark),
+              _buildMetricaResponsive('Entradas (sobró)', '+$entradas',
+                  Icons.arrow_downward, Colors.green.shade700),
+              _buildMetricaResponsive('Salidas (faltó)', '-$salidas',
+                  Icons.arrow_upward, CiautoColors.red),
+              _buildMetricaResponsive('Exactos', '$exactos',
+                  Icons.check_circle_outline, CiautoColors.gray),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   // ============================================================
-  // LISTADO DE TOTALES
+  // LISTADO DE TOTALES (con 4 pestañas)
   // ============================================================
 
   Widget _buildListadoTotales() {
     final tieneDatos = _totalesPorComponente.isNotEmpty;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.list_alt,
-                    color: Colors.blue.shade700,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Totales de consumo',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Detalle acumulado por ítem',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (!tieneDatos)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Center(
-                  child: Text(
-                    'Sin datos de consumo aún',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              )
-            else ...[
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CiautoColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               Container(
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
+                  color: CiautoColors.redLight,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                padding: const EdgeInsets.all(4),
-                child: Row(
+                child: const Icon(
+                  Icons.list_alt,
+                  color: CiautoColors.red,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _buildTabButton(
-                        'Por componente',
-                        Icons.inventory_2_outlined,
-                        0,
+                    Text(
+                      'Totales de consumo',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: CiautoColors.dark,
                       ),
                     ),
-                    Expanded(
-                      child: _buildTabButton(
-                        'Por vehículo',
-                        Icons.directions_car_outlined,
-                        1,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildTabButton(
-                        'Por hora',
-                        Icons.access_time,
-                        2,
-                      ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Detalle acumulado por ítem',
+                      style: TextStyle(fontSize: 12, color: CiautoColors.gray),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              if (_tabSeleccionada == 0)
-                _buildTablaTotales(
-                  _totalesPorComponente,
-                  columnaNombre: 'COMPONENTE',
-                  mostrarVecesUsado: true,
-                )
-              else if (_tabSeleccionada == 1)
-                _buildTablaTotales(
-                  _totalesPorVehiculo,
-                  columnaNombre: 'VEHÍCULO',
-                  mostrarVecesUsado: false,
-                )
-              else
-                _buildTablaPorHora(_consumoPorHora),
             ],
+          ),
+          const SizedBox(height: 16),
+          if (!tieneDatos)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  'Sin datos de consumo aún',
+                  style: TextStyle(color: CiautoColors.gray),
+                ),
+              ),
+            )
+          else ...[
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildTabButton(
+                        'Componente', Icons.inventory_2_outlined, 0),
+                  ),
+                  Expanded(
+                    child: _buildTabButton(
+                        'Vehículo', Icons.directions_car_outlined, 1),
+                  ),
+                  Expanded(
+                    child: _buildTabButton('Por hora', Icons.access_time, 2),
+                  ),
+                  Expanded(
+                    child: _buildTabButton('Detalle hora', Icons.list_alt, 3),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (_tabSeleccionada == 0)
+              _buildTablaTotales(
+                _totalesPorComponente,
+                columnaNombre: 'COMPONENTE',
+                mostrarVecesUsado: true,
+              )
+            else if (_tabSeleccionada == 1)
+              _buildTablaTotales(
+                _totalesPorVehiculo,
+                columnaNombre: 'VEHÍCULO',
+                mostrarVecesUsado: false,
+              )
+            else if (_tabSeleccionada == 2)
+              _buildTablaPorHora(_consumoPorHora)
+            else
+              _buildDetallePorHora(_detallePorHora),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -1296,22 +1237,20 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
           children: [
             Icon(
               icono,
-              size: 16,
-              color: seleccionado ? Colors.blue.shade700 : Colors.grey.shade600,
+              size: 14,
+              color: seleccionado ? CiautoColors.red : CiautoColors.gray,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             Flexible(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight:
-                      seleccionado ? FontWeight.bold : FontWeight.normal,
-                  color: seleccionado
-                      ? Colors.blue.shade700
-                      : Colors.grey.shade600,
+                      seleccionado ? FontWeight.w700 : FontWeight.normal,
+                  color: seleccionado ? CiautoColors.red : CiautoColors.gray,
                 ),
               ),
             ),
@@ -1335,7 +1274,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: CiautoColors.redLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -1346,7 +1285,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       columnaNombre,
                       style: const TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
+                        color: CiautoColors.redDark,
                       ),
                     ),
                   ),
@@ -1357,7 +1297,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         mostrarVecesUsado ? 'VECES' : 'CÁLCULOS',
                         style: const TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
+                          color: CiautoColors.redDark,
                         ),
                       ),
                     ),
@@ -1365,39 +1306,31 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   const SizedBox(
                     width: 90,
                     child: Center(
-                      child: Text(
-                        'REAL',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
-                        ),
-                      ),
+                      child: Text('REAL',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.orange)),
                     ),
                   ),
                   const SizedBox(
                     width: 90,
                     child: Center(
-                      child: Text(
-                        'TEÓRICO',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
+                      child: Text('TEÓRICO',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.blue)),
                     ),
                   ),
                   const SizedBox(
                     width: 100,
                     child: Center(
-                      child: Text(
-                        'DIFERENCIA',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: Text('DIFERENCIA',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: CiautoColors.redDark)),
                     ),
                   ),
                 ],
@@ -1420,7 +1353,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   ? Colors.orange.shade700
                   : diferencia < 0
                       ? Colors.green.shade700
-                      : Colors.grey.shade700;
+                      : CiautoColors.gray;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 4),
@@ -1429,7 +1362,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: CiautoColors.border),
                 ),
                 child: Row(
                   children: [
@@ -1442,6 +1375,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
+                          color: CiautoColors.dark,
                         ),
                       ),
                     ),
@@ -1494,24 +1428,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     SizedBox(
                       width: 100,
                       child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: colorDif.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: colorDif.withValues(alpha: 0.30),
-                            ),
-                          ),
-                          child: Text(
-                            '${diferencia >= 0 ? '+' : ''}${diferencia.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: colorDif,
-                            ),
-                          ),
+                        child: _badge(
+                          '${diferencia >= 0 ? '+' : ''}${diferencia.toStringAsFixed(2)}',
+                          colorDif,
                         ),
                       ),
                     ),
@@ -1532,7 +1451,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         child: Center(
           child: Text(
             'Sin consumos registrados por hora',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: CiautoColors.gray),
           ),
         ),
       );
@@ -1547,108 +1466,87 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: CiautoColors.redLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
                 children: [
                   SizedBox(
                     width: 150,
-                    child: Text(
-                      'HORA',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: Text('HORA',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: CiautoColors.redDark)),
                   ),
                   SizedBox(
                     width: 80,
                     child: Center(
-                      child: Text(
-                        'CÁLCULOS',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: Text('CÁLCULOS',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: CiautoColors.redDark)),
                     ),
                   ),
                   SizedBox(
                     width: 90,
                     child: Center(
-                      child: Text(
-                        'UNIDADES',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.purple,
-                        ),
-                      ),
+                      child: Text('UNIDADES',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.purple)),
                     ),
                   ),
                   SizedBox(
                     width: 80,
                     child: Center(
-                      child: Text(
-                        'ENTRADAS',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
+                      child: Text('ENTRADAS',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.green)),
                     ),
                   ),
                   SizedBox(
                     width: 80,
                     child: Center(
-                      child: Text(
-                        'SALIDAS',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                      ),
+                      child: Text('SALIDAS',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: CiautoColors.red)),
                     ),
                   ),
                   SizedBox(
                     width: 90,
                     child: Center(
-                      child: Text(
-                        'REAL',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
-                        ),
-                      ),
+                      child: Text('REAL',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.orange)),
                     ),
                   ),
                   SizedBox(
                     width: 90,
                     child: Center(
-                      child: Text(
-                        'TEÓRICO',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
+                      child: Text('TEÓRICO',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.blue)),
                     ),
                   ),
                   SizedBox(
                     width: 100,
                     child: Center(
-                      child: Text(
-                        'DIFERENCIA',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: Text('DIFERENCIA',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: CiautoColors.redDark)),
                     ),
                   ),
                 ],
@@ -1670,7 +1568,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   ? Colors.orange.shade700
                   : dif < 0
                       ? Colors.green.shade700
-                      : Colors.grey.shade700;
+                      : CiautoColors.gray;
 
               String horaBonita = hora;
               try {
@@ -1685,7 +1583,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: CiautoColors.border),
                 ),
                 child: Row(
                   children: [
@@ -1693,14 +1591,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       width: 150,
                       child: Row(
                         children: [
-                          Icon(Icons.access_time,
-                              size: 14, color: Colors.grey.shade600),
+                          const Icon(Icons.access_time,
+                              size: 14, color: CiautoColors.red),
                           const SizedBox(width: 6),
                           Text(
                             horaBonita,
                             style: const TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              color: CiautoColors.dark,
                             ),
                           ),
                         ],
@@ -1748,7 +1647,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     SizedBox(
                       width: 80,
                       child: Center(
-                        child: _badge('-$salidas', Colors.red.shade700),
+                        child: _badge('-$salidas', CiautoColors.red),
                       ),
                     ),
                     SizedBox(
@@ -1797,6 +1696,326 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
+  // DETALLE POR HORA (CORREGIDO — SIN "OVERFLOWED")
+  // ============================================================
+
+  Widget _buildDetallePorHora(List<Map<String, dynamic>> datos) {
+    if (datos.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: Text(
+            'Sin detalle de componentes por hora',
+            style: TextStyle(color: CiautoColors.gray),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: datos.map((bloque) {
+        final horaRaw = bloque['hora']?.toString() ?? '';
+        final vehiculos = (bloque['vehiculos'] as List?)?.cast<String>() ?? [];
+        final componentes =
+            (bloque['componentes'] as List?)?.cast<Map<String, dynamic>>() ??
+                [];
+
+        String horaBonita = horaRaw;
+        try {
+          final dt = DateTime.parse(horaRaw);
+          horaBonita = DateFormat('dd/MM/yyyy HH:00').format(dt);
+        } catch (_) {}
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: CiautoColors.border),
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              leading: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: CiautoColors.redLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: CiautoColors.red.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.access_time,
+                        size: 14, color: CiautoColors.red),
+                    const SizedBox(width: 6),
+                    Text(
+                      horaBonita,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: CiautoColors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              title: Text(
+                '${componentes.length} ${componentes.length == 1 ? 'componente' : 'componentes'}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: CiautoColors.dark,
+                ),
+              ),
+              subtitle: Text(
+                vehiculos.isEmpty
+                    ? 'Sin vehículos'
+                    : '${vehiculos.length} ${vehiculos.length == 1 ? 'vehículo' : 'vehículos'}',
+                style: const TextStyle(fontSize: 10, color: CiautoColors.gray),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              children: [
+                // ─── SCROLL HORIZONTAL PARA EVITAR "OVERFLOWED" ───
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 560),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: CiautoColors.redLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              SizedBox(
+                                width: 180,
+                                child: Text('COMPONENTE',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: CiautoColors.redDark)),
+                              ),
+                              SizedBox(
+                                width: 55,
+                                child: Center(
+                                  child: Text('VECES',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: CiautoColors.redDark)),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 65,
+                                child: Center(
+                                  child: Text('REAL',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.orange)),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 65,
+                                child: Center(
+                                  child: Text('TEÓR',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.blue)),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 50,
+                                child: Center(
+                                  child: Text('E',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.green)),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 50,
+                                child: Center(
+                                  child: Text('S',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: CiautoColors.red)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        ...componentes.map((c) {
+                          final nombre = c['nombre']?.toString() ?? '';
+                          final veces = (c['veces'] as num?)?.toInt() ?? 0;
+                          final real =
+                              (c['total_real'] as num?)?.toDouble() ?? 0.0;
+                          final teorico =
+                              (c['total_teorico'] as num?)?.toDouble() ?? 0.0;
+                          final entradas =
+                              (c['entradas'] as num?)?.toInt() ?? 0;
+                          final salidas = (c['salidas'] as num?)?.toInt() ?? 0;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: CiautoColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 180,
+                                  child: Text(
+                                    nombre,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: CiautoColors.dark,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 55,
+                                  child: Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '$veces',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 65,
+                                  child: Center(
+                                    child: Text(
+                                      real.toStringAsFixed(2),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 65,
+                                  child: Center(
+                                    child: Text(
+                                      teorico.toStringAsFixed(2),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 50,
+                                  child: Center(
+                                    child: entradas > 0
+                                        ? Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              '+$entradas',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          )
+                                        : const Text('-',
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                color: CiautoColors.gray)),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 50,
+                                  child: Center(
+                                    child: salidas > 0
+                                        ? Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: CiautoColors.red
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              '-$salidas',
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: CiautoColors.red,
+                                              ),
+                                            ),
+                                          )
+                                        : const Text('-',
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                color: CiautoColors.gray)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // ============================================================
   // MÉTRICAS
   // ============================================================
 
@@ -1826,10 +2045,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w800,
+                    color: CiautoColors.gray,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -1872,18 +2091,19 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   Widget _buildMiniMetrica(IconData icono, String valor, String label) {
     return Column(
       children: [
-        Icon(icono, size: 18, color: Colors.grey.shade700),
+        Icon(icono, size: 18, color: CiautoColors.gray),
         const SizedBox(height: 4),
         Text(
           valor,
           style: const TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
+            color: CiautoColors.dark,
           ),
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          style: const TextStyle(fontSize: 10, color: CiautoColors.gray),
         ),
       ],
     );
@@ -1914,10 +2134,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade700,
-                  ),
+                  style:
+                      const TextStyle(fontSize: 12, color: CiautoColors.gray),
                 ),
               ),
             ],
@@ -1964,10 +2182,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w700,
+                    color: CiautoColors.gray,
                   ),
                 ),
               ),
@@ -1990,51 +2208,65 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
-  // FILTRO POR VEHÍCULO
+  // FILTRO VEHÍCULO
   // ============================================================
 
   Widget _buildFiltroCard() {
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            const Icon(Icons.filter_alt_outlined, size: 20),
-            const SizedBox(width: 12),
-            const Text(
-              'Vehículo:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: CiautoColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: CiautoColors.redLight,
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                initialValue: _filtroVehiculo,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+            child: const Icon(
+              Icons.filter_alt_outlined,
+              size: 18,
+              color: CiautoColors.red,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Vehículo:',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: CiautoColors.dark,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              initialValue: _filtroVehiculo,
+              isExpanded: true,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                items: _vehiculos
-                    .map(
-                      (v) => DropdownMenuItem(
-                        value: v,
-                        child: Text(v, overflow: TextOverflow.ellipsis),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _aplicarFiltro,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
+              items: _vehiculos
+                  .map(
+                    (v) => DropdownMenuItem(
+                      value: v,
+                      child: Text(v, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _aplicarFiltro,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2045,23 +2277,23 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
 
   Widget _buildListaCalculos() {
     if (_calculosFiltrados.isEmpty) {
-      return Card(
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Padding(
-          padding: EdgeInsets.all(40),
-          child: Center(
-            child: Column(
-              children: [
-                Icon(Icons.inbox_outlined, size: 60, color: Colors.grey),
-                SizedBox(height: 12),
-                Text(
-                  'No hay cálculos registrados',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              ],
-            ),
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: CiautoColors.border),
+        ),
+        child: const Center(
+          child: Column(
+            children: [
+              Icon(Icons.inbox_outlined, size: 60, color: CiautoColors.gray),
+              SizedBox(height: 12),
+              Text(
+                'No hay cálculos registrados',
+                style: TextStyle(fontSize: 16, color: CiautoColors.gray),
+              ),
+            ],
           ),
         ),
       );
@@ -2074,7 +2306,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
           padding: EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             'Historial de cálculos',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: CiautoColors.dark,
+            ),
           ),
         ),
         ..._calculosFiltrados.map(_buildCalculoExpandible),
@@ -2091,126 +2327,144 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         ? Colors.orange.shade700
         : diferencia < 0
             ? Colors.green.shade700
-            : Colors.grey.shade700;
+            : CiautoColors.gray;
 
     final nombre = calculo['nombreVehiculo']?.toString() ?? 'Vehículo';
 
     DateTime? fecha;
     try {
-      fecha = DateTime.parse(calculo['created_at'].toString());
+      final raw = DateTime.parse(calculo['created_at'].toString());
+      fecha = raw.isUtc ? raw.toLocal() : raw;
     } catch (_) {}
 
     final fechaTexto = fecha != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(fecha)
         : 'Sin fecha';
 
-    return Card(
-      elevation: 0,
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ExpansionTile(
-        shape: const Border(),
-        collapsedShape: const Border(),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: CiautoColors.border),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          shape: const Border(),
+          collapsedShape: const Border(),
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: CiautoColors.redGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.directions_car_outlined,
+              color: Colors.white,
+            ),
           ),
-          child: Icon(Icons.directions_car_outlined, color: color),
-        ),
-        title: Text(
-          nombre,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          fechaTexto,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: color.withValues(alpha: 0.30)),
-              ),
-              child: Text(
-                '${diferencia >= 0 ? '+' : ''}${diferencia.toStringAsFixed(2)} L',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+          title: Text(
+            nombre,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: CiautoColors.dark,
+            ),
+          ),
+          subtitle: Text(
+            fechaTexto,
+            style: const TextStyle(fontSize: 12, color: CiautoColors.gray),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: color.withValues(alpha: 0.30)),
+                ),
+                child: Text(
+                  '${diferencia >= 0 ? '+' : ''}${diferencia.toStringAsFixed(2)} L',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
               ),
-            ),
-            const Icon(Icons.expand_more),
-          ],
-        ),
-        children: [
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: db.obtenerConsumoDetalladoPorCalculo(idCalculo),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                );
-              }
-
-              if (snapshot.hasError) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Error: ${snapshot.error}',
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
-
-              final componentes = snapshot.data ?? [];
-
-              if (componentes.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Sin componentes registrados',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                );
-              }
-
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Divider(),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Detalle por componente:',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+              const Icon(Icons.expand_more, color: CiautoColors.gray),
+            ],
+          ),
+          children: [
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: db.obtenerConsumoDetalladoPorCalculo(idCalculo),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: CiautoColors.red,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    _buildTablaConsumo(componentes),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(color: CiautoColors.red),
+                    ),
+                  );
+                }
+
+                final componentes = snapshot.data ?? [];
+                if (componentes.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'Sin componentes registrados',
+                      style: TextStyle(color: CiautoColors.gray),
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Detalle por componente:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: CiautoColors.dark,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildTablaConsumo(componentes),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2225,81 +2479,67 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: CiautoColors.redLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
                 children: [
                   SizedBox(
                     width: 220,
-                    child: Text(
-                      'COMPONENTE',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Text('COMPONENTE',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: CiautoColors.redDark)),
+                  ),
+                  SizedBox(
+                    width: 90,
+                    child: Center(
+                      child: Text('STOCK',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: CiautoColors.redDark)),
                     ),
                   ),
                   SizedBox(
                     width: 90,
                     child: Center(
-                      child: Text(
-                        'STOCK',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: Text('TEÓRICO',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: CiautoColors.redDark)),
                     ),
                   ),
                   SizedBox(
                     width: 90,
                     child: Center(
-                      child: Text(
-                        'TEÓRICO',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 90,
-                    child: Center(
-                      child: Text(
-                        'REAL',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: Text('REAL',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: CiautoColors.redDark)),
                     ),
                   ),
                   SizedBox(
                     width: 120,
                     child: Center(
-                      child: Text(
-                        'STOCK - REAL',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
-                        ),
-                      ),
+                      child: Text('STOCK - REAL',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.orange)),
                     ),
                   ),
                   SizedBox(
                     width: 120,
                     child: Center(
-                      child: Text(
-                        'STOCK - TEÓRICO',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
+                      child: Text('STOCK - TEÓRICO',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.blue)),
                     ),
                   ),
                 ],
@@ -2323,7 +2563,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: CiautoColors.border),
                 ),
                 child: Row(
                   children: [
@@ -2333,7 +2573,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         nombre,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(
+                            fontSize: 12, color: CiautoColors.dark),
                       ),
                     ),
                     SizedBox(
@@ -2344,6 +2585,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
+                            color: CiautoColors.dark,
                           ),
                         ),
                       ),
@@ -2430,7 +2672,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         SnackBar(
           content: Text(mensaje),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: esError ? Colors.red.shade700 : null,
+          backgroundColor: esError ? CiautoColors.red : null,
         ),
       );
   }
