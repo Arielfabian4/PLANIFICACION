@@ -3,7 +3,8 @@ class Componente {
   int idCalculo;
   String nombre;
   double? reseta;
-  double? valorReal; // ✅ NUEVO CAMPO
+  double? valorReal;
+  String? unidad; // ✅ NUEVO CAMPO
   DateTime? createdAt;
 
   Componente({
@@ -11,7 +12,8 @@ class Componente {
     required this.idCalculo,
     required this.nombre,
     this.reseta,
-    this.valorReal, // ✅ NUEVO
+    this.valorReal,
+    this.unidad, // ✅ NUEVO
     this.createdAt,
   });
 
@@ -22,7 +24,8 @@ class Componente {
       'id_calculo': idCalculo,
       'nombre': nombre,
       'reseta': reseta,
-      'valor_real': valorReal, // ✅ NUEVO
+      'valor_real': valorReal,
+      'unidad': unidad, // ✅ NUEVO
       'created_at': createdAt?.toIso8601String(),
     };
   }
@@ -34,7 +37,8 @@ class Componente {
       idCalculo: map['id_calculo'] as int,
       nombre: map['nombre'] as String,
       reseta: (map['reseta'] as num?)?.toDouble(),
-      valorReal: (map['valor_real'] as num?)?.toDouble(), // ✅ NUEVO
+      valorReal: (map['valor_real'] as num?)?.toDouble(),
+      unidad: map['unidad'] as String?, // ✅ NUEVO
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : null,
@@ -47,7 +51,8 @@ class Componente {
     int? idCalculo,
     String? nombre,
     double? reseta,
-    double? valorReal, // ✅ NUEVO
+    double? valorReal,
+    String? unidad, // ✅ NUEVO
     DateTime? createdAt,
   }) {
     return Componente(
@@ -55,7 +60,8 @@ class Componente {
       idCalculo: idCalculo ?? this.idCalculo,
       nombre: nombre ?? this.nombre,
       reseta: reseta ?? this.reseta,
-      valorReal: valorReal ?? this.valorReal, // ✅ NUEVO
+      valorReal: valorReal ?? this.valorReal,
+      unidad: unidad ?? this.unidad, // ✅ NUEVO
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -64,6 +70,6 @@ class Componente {
   String toString() {
     return 'Componente{idComponente: $idComponente, idCalculo: $idCalculo, '
         'nombre: $nombre, reseta: $reseta, valorReal: $valorReal, '
-        'createdAt: $createdAt}';
+        'unidad: $unidad, createdAt: $createdAt}';
   }
 }

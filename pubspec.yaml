@@ -9,28 +9,51 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   sqflite: ^2.3.0
   path: ^1.8.3
-  intl: ^0.18.1
+  intl: ^0.20.2              # ✅ Actualizado (requerido por flutter_localizations)
   mobile_scanner: ^7.4.0
-  # ✅ Para importar Excel
   file_picker: ^8.0.0
   excel: ^4.0.3
-  # ✅ Para exportar Excel
   path_provider: ^2.1.0
   share_plus: ^10.0.0
   permission_handler: ^11.3.0
-  # ✅ Para generar y guardar códigos QR
   qr_flutter: ^4.1.0
   screenshot: ^3.0.0
   gal: ^2.3.0
-  # ✅ Para guardar recetas personalizadas
   shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/
+    - assets/images/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+
+  adaptive_icon_background: "#0D1117"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    icon_size: 256
+
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#0D1117"
+    theme_color: "#E63946"

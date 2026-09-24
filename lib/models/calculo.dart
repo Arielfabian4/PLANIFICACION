@@ -4,8 +4,8 @@ class Calculo {
   int? idCalculo;
   int idVehiculo;
   String diferencia;
-  String? valorReal; // ✅ Corregido: valor_real
-  String? medicion; // ✅ Corregido: medicion
+  String? valorReal;
+  String? medicion;
   DateTime? createdAt;
   List<Componente>? componentes;
 
@@ -19,40 +19,63 @@ class Calculo {
     this.componentes,
   });
 
-  // Convertir a Map para SQLite
+  /// ✅ Formatea a "YYYY-MM-DD HH:MM:SS" en UTC
+  static String _fechaSqlUtc(DateTime dt) {
+    final utc = dt.toUtc();
+    final y = utc.year.toString().padLeft(4, '0');
+    final m = utc.month.toString().padLeft(2, '0');
+    final d = utc.day.toString().padLeft(2, '0');
+    final h = utc.hour.toString().padLeft(2, '0');
+    final mi = utc.minute.toString().padLeft(2, '0');
+    final s = utc.second.toString().padLeft(2, '0');
+    return '$y-$m-$d $h:$mi:$s';
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id_calculo': idCalculo,
       'id_vehiculo': idVehiculo,
       'diferencia': diferencia,
-      'valor_real': valorReal, // ✅ Corregido
-      'medicion': medicion, // ✅ Corregido
-      'created_at': createdAt?.toIso8601String(),
+      'valor_real': valorReal,
+      'medicion': medicion,
+      'created_at': createdAt != null ? _fechaSqlUtc(createdAt!) : null,
     };
   }
 
-  // Crear desde Map (de SQLite)
   factory Calculo.fromMap(Map<String, dynamic> map) {
+    DateTime? fecha;
+    final raw = map['created_at'];
+    if (raw != null) {
+      try {
+        final texto = raw.toString().replaceFirst(' ', 'T');
+        // ✅ El guardado está en UTC → convertir a local para mostrar
+        fecha = DateTime.parse('${texto}Z').toLocal();
+      } catch (_) {
+        try {
+          fecha = DateTime.parse(raw.toString());
+        } catch (_) {
+          fecha = null;
+        }
+      }
+    }
+
     return Calculo(
       idCalculo: map['id_calculo'] as int?,
       idVehiculo: map['id_vehiculo'] as int,
       diferencia: map['diferencia'] as String,
-      valorReal: map['valor_real'] as String?, // ✅ Corregido
-      medicion: map['medicion'] as String?, // ✅ Corregido
-      createdAt: map['created_at'] != null
-          ? DateTime.parse(map['created_at'] as String)
-          : null,
+      valorReal: map['valor_real'] as String?,
+      medicion: map['medicion'] as String?,
+      createdAt: fecha,
       componentes: [],
     );
   }
 
-  // Copy con cambios
   Calculo copyWith({
     int? idCalculo,
     int? idVehiculo,
     String? diferencia,
-    String? valorReal, // ✅ Corregido
-    String? medicion, // ✅ Corregido
+    String? valorReal,
+    String? medicion,
     DateTime? createdAt,
     List<Componente>? componentes,
   }) {
@@ -60,8 +83,8 @@ class Calculo {
       idCalculo: idCalculo ?? this.idCalculo,
       idVehiculo: idVehiculo ?? this.idVehiculo,
       diferencia: diferencia ?? this.diferencia,
-      valorReal: valorReal ?? this.valorReal, // ✅ Corregido
-      medicion: medicion ?? this.medicion, // ✅ Corregido
+      valorReal: valorReal ?? this.valorReal,
+      medicion: medicion ?? this.medicion,
       createdAt: createdAt ?? this.createdAt,
       componentes: componentes ?? this.componentes,
     );
@@ -69,6 +92,8 @@ class Calculo {
 
   @override
   String toString() {
-    return 'Calculo(idCalculo: $idCalculo, idVehiculo: $idVehiculo, diferencia: $diferencia, valorReal: $valorReal, medicion: $medicion, createdAt: $createdAt)';
+    return 'Calculo(idCalculo: $idCalculo, idVehiculo: $idVehiculo, '
+        'diferencia: $diferencia, valorReal: $valorReal, '
+        'medicion: $medicion, createdAt: $createdAt)';
   }
 }

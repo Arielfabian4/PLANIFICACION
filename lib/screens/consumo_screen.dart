@@ -5,6 +5,126 @@ import '../database/database_helper.dart';
 import '../utils/exportar_excel_helper.dart';
 import '../theme/ciauto_theme.dart';
 
+// ============================================================
+// 🏎️ TEMA AUTOMOTRIZ + HUD
+// ============================================================
+class AutomotiveTheme {
+  // Base
+  static const Color carbonDark = Color(0xFF0D1117);
+  static const Color carbonLight = Color(0xFF161B22);
+  static const Color carbonSurface = Color(0xFF1A1F26);
+  static const Color racingRed = Color(0xFFE63946);
+  static const Color neonOrange = Color(0xFFFF6B35);
+  static const Color electricBlue = Color(0xFF1E90FF);
+  static const Color chromeSilver = Color(0xFFB0BEC5);
+  static const Color asphaltGray = Color(0xFF2A2F36);
+  static const Color dashGreen = Color(0xFF00E676);
+  static const Color warningAmber = Color(0xFFFFC107);
+
+  // 🎨 Paleta HUD neón
+  static const Color hudCyan = Color(0xFF00E5FF);
+  static const Color hudMagenta = Color(0xFFFF006E);
+  static const Color hudLime = Color(0xFF00FF88);
+  static const Color hudBg = Color(0xFF050A0F);
+  static const Color hudPanel = Color(0xFF0A1419);
+  static const Color hudLine = Color(0xFF1A3038);
+
+  static const LinearGradient racingGradient = LinearGradient(
+    colors: [Color(0xFFE63946), Color(0xFFFF6B35)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient carbonGradient = LinearGradient(
+    colors: [Color(0xFF0D1117), Color(0xFF1F2630)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient speedGradient = LinearGradient(
+    colors: [Color(0xFF1E90FF), Color(0xFF00E676)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient hudGradient = LinearGradient(
+    colors: [Color(0xFF00E5FF), Color(0xFF00FF88)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
+// ============================================================
+// 🎨 PAINTER: PANEL HUD CON ESQUINAS CORTADAS
+// ============================================================
+class HudPanelPainter extends CustomPainter {
+  final Color accent;
+  HudPanelPainter({required this.accent});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cut = 14.0;
+    final paintFill = Paint()
+      ..color = AutomotiveTheme.hudPanel
+      ..style = PaintingStyle.fill;
+    final paintBorder = Paint()
+      ..color = accent.withValues(alpha: 0.55)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    final paintAccent = Paint()
+      ..color = accent
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    final path = Path()
+      ..moveTo(cut, 0)
+      ..lineTo(size.width - cut, 0)
+      ..lineTo(size.width, cut)
+      ..lineTo(size.width, size.height - cut)
+      ..lineTo(size.width - cut, size.height)
+      ..lineTo(cut, size.height)
+      ..lineTo(0, size.height - cut)
+      ..lineTo(0, cut)
+      ..close();
+
+    canvas.drawPath(path, paintFill);
+    canvas.drawPath(path, paintBorder);
+
+    // Franja superior de acento
+    canvas.drawLine(
+      Offset(cut + 6, 0),
+      Offset(size.width * 0.4, 0),
+      paintAccent,
+    );
+    // Franja inferior derecha
+    canvas.drawLine(
+      Offset(size.width * 0.6, size.height),
+      Offset(size.width - cut - 6, size.height),
+      paintAccent,
+    );
+
+    // Pequeñas marcas técnicas en las esquinas
+    final cornerPaint = Paint()
+      ..color = accent.withValues(alpha: 0.9)
+      ..strokeWidth = 1.5;
+    // Superior izquierda
+    canvas.drawLine(
+        const Offset(cut, 0), const Offset(cut + 10, 0), cornerPaint);
+    // Superior derecha
+    canvas.drawLine(Offset(size.width - cut - 10, 0),
+        Offset(size.width - cut, 0), cornerPaint);
+    // Inferior izquierda
+    canvas.drawLine(Offset(0, size.height - cut),
+        Offset(0, size.height - cut + 10), cornerPaint);
+    // Inferior derecha
+    canvas.drawLine(Offset(size.width, size.height - cut - 10),
+        Offset(size.width, size.height - cut), cornerPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant HudPanelPainter old) => old.accent != accent;
+}
+
 class ConsumoScreen extends StatefulWidget {
   const ConsumoScreen({super.key});
 
@@ -150,6 +270,20 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       helpText: esDesde ? 'Selecciona fecha inicial' : 'Selecciona fecha final',
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AutomotiveTheme.hudCyan,
+              onPrimary: Colors.black,
+              surface: AutomotiveTheme.hudPanel,
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: AutomotiveTheme.hudPanel,
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked == null) return;
 
@@ -178,6 +312,20 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       helpText: esDesde ? 'Selecciona hora inicial' : 'Selecciona hora final',
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AutomotiveTheme.hudCyan,
+              onPrimary: Colors.black,
+              surface: AutomotiveTheme.hudPanel,
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: AutomotiveTheme.hudPanel,
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked == null) return;
 
@@ -208,20 +356,21 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
 
     switch (rango) {
       case 'Hoy':
-        desde = DateTime(ahora.year, ahora.month, ahora.day);
-        hasta = desde;
+        desde = DateTime(ahora.year, ahora.month, ahora.day, 0, 0, 0);
+        hasta = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
         break;
       case 'Semana':
-        desde = ahora.subtract(const Duration(days: 7));
-        hasta = ahora;
+        final hace7 = ahora.subtract(const Duration(days: 7));
+        desde = DateTime(hace7.year, hace7.month, hace7.day, 0, 0, 0);
+        hasta = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
         break;
       case 'Mes':
-        desde = DateTime(ahora.year, ahora.month, 1);
-        hasta = ahora;
+        desde = DateTime(ahora.year, ahora.month, 1, 0, 0, 0);
+        hasta = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
         break;
       case 'Año':
-        desde = DateTime(ahora.year, 1, 1);
-        hasta = ahora;
+        desde = DateTime(ahora.year, 1, 1, 0, 0, 0);
+        hasta = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
         break;
       case 'Todo':
         desde = null;
@@ -281,27 +430,56 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CiautoColors.light,
+      backgroundColor: AutomotiveTheme.hudBg,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: CiautoColors.red,
+        backgroundColor: AutomotiveTheme.hudPanel,
         foregroundColor: Colors.white,
-        title: const Row(
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF050A0F), Color(0xFF0A1419)],
+            ),
+            border: Border(
+              bottom: BorderSide(color: AutomotiveTheme.hudCyan, width: 2),
+            ),
+          ),
+        ),
+        title: Row(
           children: [
-            Icon(Icons.local_gas_station, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Consumo', style: TextStyle(fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AutomotiveTheme.hudCyan.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.6)),
+              ),
+              child: const Icon(Icons.local_gas_station,
+                  color: AutomotiveTheme.hudCyan, size: 18),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'CONSUMO',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 4,
+                fontSize: 15,
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
         actions: [
           IconButton(
             tooltip: 'Exportar a Excel',
-            icon: const Icon(Icons.table_chart_outlined),
+            icon: const Icon(Icons.table_chart_outlined,
+                color: AutomotiveTheme.hudCyan),
             onPressed: _mostrarDialogoExportar,
           ),
           IconButton(
             tooltip: 'Recargar',
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: AutomotiveTheme.hudCyan),
             onPressed: _cargarDatos,
           ),
         ],
@@ -309,10 +487,12 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       body: SafeArea(
         child: _cargando
             ? const Center(
-                child: CircularProgressIndicator(color: CiautoColors.red),
+                child:
+                    CircularProgressIndicator(color: AutomotiveTheme.hudCyan),
               )
             : RefreshIndicator(
-                color: CiautoColors.red,
+                color: AutomotiveTheme.hudCyan,
+                backgroundColor: AutomotiveTheme.hudPanel,
                 onRefresh: _cargarDatos,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -348,56 +528,273 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
+  // HELPERS UI HUD
+  // ============================================================
+
+  Widget _buildHudPanel({
+    required Widget child,
+    Color accent = AutomotiveTheme.hudCyan,
+    EdgeInsets? padding,
+    String? cornerLabel,
+  }) {
+    return CustomPaint(
+      painter: HudPanelPainter(accent: accent),
+      child: Container(
+        padding: padding ?? const EdgeInsets.all(20),
+        child: Stack(
+          children: [
+            child,
+            if (cornerLabel != null)
+              Positioned(
+                top: -4,
+                right: 10,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  color: AutomotiveTheme.hudBg,
+                  child: Text(
+                    cornerLabel.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: accent,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHudHeader(String titulo,
+      {Color accent = AutomotiveTheme.hudCyan}) {
+    return Row(
+      children: [
+        Container(width: 3, height: 16, color: accent),
+        const SizedBox(width: 8),
+        Text(
+          titulo.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: 3,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: AutomotiveTheme.hudLine,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGaugeCircular({
+    required String label,
+    required String valor,
+    required String unidad,
+    required double progreso,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        SizedBox(
+          width: 130,
+          height: 130,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 130,
+                height: 130,
+                child: CircularProgressIndicator(
+                  value: 1.0,
+                  strokeWidth: 5,
+                  valueColor: AlwaysStoppedAnimation(
+                    color.withValues(alpha: 0.15),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 130,
+                height: 130,
+                child: CircularProgressIndicator(
+                  value: progreso.clamp(0.0, 1.0),
+                  strokeWidth: 5,
+                  valueColor: AlwaysStoppedAnimation(color),
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    valor,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  Text(
+                    unidad,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: color.withValues(alpha: 0.7),
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            color: color,
+            letterSpacing: 3,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
   // EXPORTAR
   // ============================================================
 
   Future<void> _mostrarDialogoExportar() async {
     final opcion = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.table_chart, color: CiautoColors.red),
-            SizedBox(width: 8),
-            Text('Exportar a Excel'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildOpcionExportar(
-              'Cálculos completos',
-              'Historial con detalle por componente',
-              Icons.calculate_outlined,
-              Colors.orange,
-              'calculos',
-              dialogContext,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0A1419), Color(0xFF050A0F)],
             ),
-            _buildOpcionExportar(
-              'Consumo por componente',
-              'Totales acumulados por ítem',
-              Icons.analytics_outlined,
-              Colors.purple,
-              'consumo',
-              dialogContext,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: AutomotiveTheme.hudCyan.withValues(alpha: 0.6),
+              width: 1.5,
             ),
-            _buildOpcionExportar(
-              'Reporte completo',
-              'Todo en un solo archivo con varias hojas',
-              Icons.description_outlined,
-              CiautoColors.red,
-              'todo',
-              dialogContext,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
+            boxShadow: [
+              BoxShadow(
+                color: AutomotiveTheme.hudCyan.withValues(alpha: 0.25),
+                blurRadius: 30,
+              ),
+            ],
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AutomotiveTheme.hudLine,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AutomotiveTheme.hudCyan.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: AutomotiveTheme.hudCyan.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      child: const Icon(Icons.table_chart,
+                          color: AutomotiveTheme.hudCyan, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    const Text(
+                      'EXPORTAR A EXCEL',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  children: [
+                    _buildOpcionExportar(
+                      'Cálculos completos',
+                      'Historial con detalle por componente',
+                      Icons.calculate_outlined,
+                      AutomotiveTheme.hudCyan,
+                      'calculos',
+                      dialogContext,
+                    ),
+                    _buildOpcionExportar(
+                      'Consumo por componente',
+                      'Totales acumulados por ítem',
+                      Icons.analytics_outlined,
+                      AutomotiveTheme.hudMagenta,
+                      'consumo',
+                      dialogContext,
+                    ),
+                    _buildOpcionExportar(
+                      'Reporte completo',
+                      'Todo en un solo archivo con varias hojas',
+                      Icons.description_outlined,
+                      AutomotiveTheme.hudLime,
+                      'todo',
+                      dialogContext,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: AutomotiveTheme.hudLine, width: 1),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('CANCELAR',
+                          style: TextStyle(
+                              color: AutomotiveTheme.chromeSilver,
+                              letterSpacing: 2,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
 
@@ -413,20 +810,62 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     String valor,
     BuildContext dialogContext,
   ) {
-    return ListTile(
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Navigator.pop(dialogContext, valor),
+          splashColor: color.withValues(alpha: 0.15),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.02),
+              border: Border.all(color: color.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    border: Border.all(color: color.withValues(alpha: 0.5)),
+                  ),
+                  child: Icon(icono, color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        titulo,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitulo,
+                        style: const TextStyle(
+                          color: AutomotiveTheme.chromeSilver,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right,
+                    color: color.withValues(alpha: 0.7), size: 20),
+              ],
+            ),
+          ),
         ),
-        child: Icon(icono, color: color, size: 22),
       ),
-      title: Text(titulo,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-      subtitle: Text(subtitulo, style: const TextStyle(fontSize: 12)),
-      onTap: () => Navigator.pop(dialogContext, valor),
     );
   }
 
@@ -436,14 +875,16 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       barrierDismissible: false,
       builder: (_) => const Center(
         child: Card(
+          color: AutomotiveTheme.hudPanel,
           child: Padding(
             padding: EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(color: CiautoColors.red),
+                CircularProgressIndicator(color: AutomotiveTheme.hudCyan),
                 SizedBox(height: 12),
-                Text('Generando Excel...'),
+                Text('Generando Excel...',
+                    style: TextStyle(color: Colors.white)),
               ],
             ),
           ),
@@ -482,13 +923,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   // ============================================================
 
   Widget _buildFiltroFechaCard() {
-    return Container(
+    return _buildHudPanel(
+      accent:
+          _hayFiltroFecha ? AutomotiveTheme.hudCyan : AutomotiveTheme.hudLine,
+      cornerLabel: 'SYS::FILTER',
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CiautoColors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -498,15 +937,23 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _hayFiltroFecha
-                      ? CiautoColors.redLight
-                      : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
+                  color: (_hayFiltroFecha
+                          ? AutomotiveTheme.hudCyan
+                          : AutomotiveTheme.chromeSilver)
+                      .withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: (_hayFiltroFecha
+                            ? AutomotiveTheme.hudCyan
+                            : AutomotiveTheme.chromeSilver)
+                        .withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Icon(
                   Icons.date_range,
-                  color: _hayFiltroFecha ? CiautoColors.red : CiautoColors.gray,
-                  size: 22,
+                  color: _hayFiltroFecha
+                      ? AutomotiveTheme.hudCyan
+                      : AutomotiveTheme.chromeSilver,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),
@@ -515,24 +962,26 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Filtrar por fecha y hora',
+                      'FILTRO DE FECHA Y HORA',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: CiautoColors.dark,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       _rangoFechasTexto,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: _hayFiltroFecha
-                            ? CiautoColors.red
-                            : CiautoColors.gray,
+                            ? AutomotiveTheme.hudCyan
+                            : AutomotiveTheme.chromeSilver,
                         fontWeight: _hayFiltroFecha
                             ? FontWeight.w700
                             : FontWeight.normal,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -542,12 +991,12 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 IconButton(
                   tooltip: 'Limpiar filtro',
                   icon: const Icon(Icons.close, size: 20),
-                  color: CiautoColors.red,
+                  color: AutomotiveTheme.hudCyan,
                   onPressed: _limpiarFiltros,
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -569,7 +1018,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             children: [
               Expanded(
                 child: _buildFechaButton(
-                  label: 'Desde (fecha)',
+                  label: 'DESDE',
                   fecha: _fechaDesde,
                   onTap: () => _seleccionarFecha(true),
                 ),
@@ -577,7 +1026,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildFechaButton(
-                  label: 'Hasta (fecha)',
+                  label: 'HASTA',
                   fecha: _fechaHasta,
                   onTap: () => _seleccionarFecha(false),
                 ),
@@ -589,7 +1038,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             children: [
               Expanded(
                 child: _buildHoraButton(
-                  label: 'Desde (hora)',
+                  label: 'HORA DESDE',
                   hora: _horaDesde,
                   onTap: () => _seleccionarHora(true),
                 ),
@@ -597,7 +1046,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: _buildHoraButton(
-                  label: 'Hasta (hora)',
+                  label: 'HORA HASTA',
                   hora: _horaHasta,
                   onTap: () => _seleccionarHora(false),
                 ),
@@ -614,20 +1063,31 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     return GestureDetector(
       onTap: () => _aplicarRangoRapido(label),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: activo ? CiautoColors.red : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
+          color: activo
+              ? AutomotiveTheme.hudCyan.withValues(alpha: 0.15)
+              : Colors.transparent,
           border: Border.all(
-            color: activo ? CiautoColors.red : Colors.grey.shade300,
+            color: activo ? AutomotiveTheme.hudCyan : AutomotiveTheme.hudLine,
           ),
+          boxShadow: activo
+              ? [
+                  BoxShadow(
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                  ),
+                ]
+              : null,
         ),
         child: Text(
-          label,
+          label.toUpperCase(),
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: activo ? Colors.white : CiautoColors.gray,
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+            color:
+                activo ? AutomotiveTheme.hudCyan : AutomotiveTheme.chromeSilver,
           ),
         ),
       ),
@@ -679,16 +1139,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     final tieneFecha = fecha != null;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: tieneFecha ? CiautoColors.redLight : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(10),
+          color: tieneFecha
+              ? AutomotiveTheme.hudCyan.withValues(alpha: 0.10)
+              : Colors.transparent,
           border: Border.all(
-            color: tieneFecha
-                ? CiautoColors.red.withValues(alpha: 0.4)
-                : Colors.grey.shade300,
+            color:
+                tieneFecha ? AutomotiveTheme.hudCyan : AutomotiveTheme.hudLine,
           ),
         ),
         child: Row(
@@ -696,7 +1155,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Icon(
               Icons.calendar_today_outlined,
               size: 16,
-              color: tieneFecha ? CiautoColors.red : CiautoColors.gray,
+              color: tieneFecha
+                  ? AutomotiveTheme.hudCyan
+                  : AutomotiveTheme.chromeSilver,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -706,12 +1167,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: tieneFecha ? CiautoColors.red : CiautoColors.gray,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: tieneFecha
+                          ? AutomotiveTheme.hudCyan
+                          : AutomotiveTheme.chromeSilver,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     tieneFecha
                         ? DateFormat('dd/MM/yyyy').format(fecha)
@@ -719,8 +1183,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color:
-                          tieneFecha ? CiautoColors.dark : Colors.grey.shade500,
+                      color: tieneFecha
+                          ? Colors.white
+                          : AutomotiveTheme.chromeSilver,
                     ),
                   ),
                 ],
@@ -740,16 +1205,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     final tieneHora = hora != null;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: tieneHora ? CiautoColors.redLight : Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(10),
+          color: tieneHora
+              ? AutomotiveTheme.hudCyan.withValues(alpha: 0.10)
+              : Colors.transparent,
           border: Border.all(
-            color: tieneHora
-                ? CiautoColors.red.withValues(alpha: 0.4)
-                : Colors.grey.shade300,
+            color:
+                tieneHora ? AutomotiveTheme.hudCyan : AutomotiveTheme.hudLine,
           ),
         ),
         child: Row(
@@ -757,7 +1221,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Icon(
               Icons.access_time,
               size: 16,
-              color: tieneHora ? CiautoColors.red : CiautoColors.gray,
+              color: tieneHora
+                  ? AutomotiveTheme.hudCyan
+                  : AutomotiveTheme.chromeSilver,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -767,12 +1233,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: tieneHora ? CiautoColors.red : CiautoColors.gray,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: tieneHora
+                          ? AutomotiveTheme.hudCyan
+                          : AutomotiveTheme.chromeSilver,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     tieneHora
                         ? '${hora.hour.toString().padLeft(2, '0')}:${hora.minute.toString().padLeft(2, '0')}'
@@ -780,8 +1249,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color:
-                          tieneHora ? CiautoColors.dark : Colors.grey.shade500,
+                      color: tieneHora
+                          ? Colors.white
+                          : AutomotiveTheme.chromeSilver,
                     ),
                   ),
                 ],
@@ -799,49 +1269,18 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
 
   Widget _buildResumenCard() {
     final colorTotal = _diferenciaTotal > 0
-        ? Colors.orange.shade700
+        ? AutomotiveTheme.hudMagenta
         : _diferenciaTotal < 0
-            ? Colors.green.shade700
-            : CiautoColors.gray;
+            ? AutomotiveTheme.hudLime
+            : AutomotiveTheme.chromeSilver;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CiautoColors.border),
-      ),
+    return _buildHudPanel(
+      accent: AutomotiveTheme.hudCyan,
+      cornerLabel: 'SYS::RESUMEN',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: CiautoColors.redLight,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.local_gas_station_outlined,
-                  color: CiautoColors.red,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Text(
-                  'Resumen de cálculos',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: CiautoColors.dark,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          _buildHudHeader('RESUMEN DE CÁLCULOS'),
           const SizedBox(height: 20),
           Wrap(
             spacing: 12,
@@ -850,16 +1289,16 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
               SizedBox(
                 width: 160,
                 child: _buildMetrica(
-                  'Cálculos',
+                  'CÁLCULOS',
                   '$_cantidadCalculos',
                   Icons.calculate_outlined,
-                  CiautoColors.red,
+                  AutomotiveTheme.hudCyan,
                 ),
               ),
               SizedBox(
                 width: 160,
                 child: _buildMetrica(
-                  'Diferencia total (L)',
+                  'DIFERENCIA (L)',
                   _diferenciaTotal.toStringAsFixed(2),
                   Icons.trending_up,
                   colorTotal,
@@ -873,118 +1312,83 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   Widget _buildConsumoGeneralCard() {
-    final colorReal = Colors.orange.shade700;
-    final colorTeorico = Colors.blue.shade700;
+    final maxValor =
+        [_totalReal, _totalTeorico].reduce((a, b) => a > b ? a : b);
+    final progresoReal = maxValor > 0 ? _totalReal / maxValor : 0.0;
+    final progresoTeorico = maxValor > 0 ? _totalTeorico / maxValor : 0.0;
+
     final colorDiferencia = _diferenciaGeneral > 0
-        ? Colors.red.shade700
+        ? AutomotiveTheme.hudMagenta
         : _diferenciaGeneral < 0
-            ? Colors.green.shade700
-            : CiautoColors.gray;
+            ? AutomotiveTheme.hudLime
+            : AutomotiveTheme.chromeSilver;
 
     final totalComponentes = _resumenGeneral['total_componentes'] ?? 0;
     final totalCalculos = _resumenGeneral['total_calculos'] ?? 0;
     final totalVehiculos = _resumenGeneral['total_vehiculos'] ?? 0;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CiautoColors.border),
-      ),
+    return _buildHudPanel(
+      accent: AutomotiveTheme.hudCyan,
+      cornerLabel: 'SYS::CONSUMO',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildHudHeader('CONSUMO GENERAL ACUMULADO'),
+          const SizedBox(height: 6),
+          const Text(
+            '// TOTAL DE TODOS LOS CÁLCULOS REGISTRADOS',
+            style: TextStyle(
+              fontSize: 10,
+              color: AutomotiveTheme.chromeSilver,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: CiautoColors.redLight,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.analytics_outlined,
-                  color: CiautoColors.red,
-                  size: 28,
-                ),
+              _buildGaugeCircular(
+                label: 'REAL',
+                valor: _totalReal.toStringAsFixed(1),
+                unidad: 'L',
+                progreso: progresoReal,
+                color: AutomotiveTheme.hudCyan,
               ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Consumo general acumulado',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: CiautoColors.dark,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Total de todos los cálculos registrados',
-                      style: TextStyle(fontSize: 12, color: CiautoColors.gray),
-                    ),
-                  ],
-                ),
+              _buildGaugeCircular(
+                label: 'TEÓRICO',
+                valor: _totalTeorico.toStringAsFixed(1),
+                unidad: 'L',
+                progreso: progresoTeorico,
+                color: AutomotiveTheme.hudMagenta,
               ),
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildMetricaGrande(
-                  'CONSUMO REAL',
-                  _totalReal.toStringAsFixed(2),
-                  'L',
-                  Icons.water_drop,
-                  colorReal,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildMetricaGrande(
-                  'CONSUMO TEÓRICO',
-                  _totalTeorico.toStringAsFixed(2),
-                  'L',
-                  Icons.science_outlined,
-                  colorTeorico,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: colorDiferencia.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border:
-                  Border.all(color: colorDiferencia.withValues(alpha: 0.25)),
+              border: Border.all(color: colorDiferencia.withValues(alpha: 0.5)),
             ),
             child: Row(
               children: [
-                Icon(Icons.compare_arrows, color: colorDiferencia, size: 20),
+                Icon(Icons.compare_arrows, color: colorDiferencia, size: 18),
                 const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Diferencia (Real - Teórico)',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: CiautoColors.dark,
-                    ),
+                Text(
+                  'Δ DIFERENCIA',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: colorDiferencia,
+                    letterSpacing: 2,
                   ),
                 ),
+                const Spacer(),
                 Text(
                   '${_diferenciaGeneral >= 0 ? '+' : ''}${_diferenciaGeneral.toStringAsFixed(2)} L',
                   style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
                     color: colorDiferencia,
                   ),
                 ),
@@ -995,22 +1399,216 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
+              color: AutomotiveTheme.hudLine.withValues(alpha: 0.3),
+              border: Border.all(color: AutomotiveTheme.hudLine),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildMiniMetrica(
-                    Icons.directions_car, '$totalVehiculos', 'Vehículos'),
-                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                    Icons.directions_car, '$totalVehiculos', 'VEHÍCULOS'),
+                Container(width: 1, height: 30, color: AutomotiveTheme.hudLine),
                 _buildMiniMetrica(
-                    Icons.calculate, '$totalCalculos', 'Cálculos'),
-                Container(width: 1, height: 30, color: Colors.grey.shade300),
+                    Icons.calculate, '$totalCalculos', 'CÁLCULOS'),
+                Container(width: 1, height: 30, color: AutomotiveTheme.hudLine),
                 _buildMiniMetrica(
-                    Icons.inventory_2, '$totalComponentes', 'Componentes'),
+                    Icons.inventory_2, '$totalComponentes', 'COMPONENTES'),
               ],
             ),
+          ),
+          if (_totalesPorComponente.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Divider(color: AutomotiveTheme.hudLine, height: 1),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: AutomotiveTheme.hudCyan.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.build_circle_outlined,
+                    size: 14,
+                    color: AutomotiveTheme.hudCyan,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'COMPONENTES UTILIZADOS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.12),
+                    border: Border.all(
+                        color: AutomotiveTheme.hudCyan.withValues(alpha: 0.5)),
+                  ),
+                  child: Text(
+                    '${_totalesPorComponente.length}',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      color: AutomotiveTheme.hudCyan,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ..._totalesPorComponente.map(_buildComponenteUtilizado),
+          ] else ...[
+            const SizedBox(height: 16),
+            const Divider(color: AutomotiveTheme.hudLine, height: 1),
+            const SizedBox(height: 16),
+            Center(
+              child: Text(
+                '// SIN COMPONENTES REGISTRADOS',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AutomotiveTheme.chromeSilver.withValues(alpha: 0.7),
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComponenteUtilizado(Map<String, dynamic> item) {
+    final nombre = item['nombre']?.toString() ?? 'Componente';
+    final totalReal = (item['total_real'] as num?)?.toDouble() ?? 0.0;
+    final totalTeorico = (item['total_teorico'] as num?)?.toDouble() ?? 0.0;
+    final veces = (item['veces_usado'] as num?)?.toInt() ?? 0;
+    final unidad = item['unidad']?.toString() ?? 'L';
+    final diferencia = totalReal - totalTeorico;
+
+    final colorDif = diferencia > 0
+        ? AutomotiveTheme.hudMagenta
+        : diferencia < 0
+            ? AutomotiveTheme.hudLime
+            : AutomotiveTheme.chromeSilver;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.25),
+        border: Border.all(color: AutomotiveTheme.hudLine, width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AutomotiveTheme.hudCyan.withValues(alpha: 0.10),
+              border: Border.all(
+                color: AutomotiveTheme.hudCyan.withValues(alpha: 0.4),
+              ),
+            ),
+            child: const Icon(
+              Icons.water_drop_outlined,
+              size: 16,
+              color: AutomotiveTheme.hudCyan,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nombre,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1.2,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AutomotiveTheme.hudLine.withValues(alpha: 0.5),
+                      ),
+                      child: Text(
+                        '$veces ${veces == 1 ? 'vez' : 'veces'}',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: AutomotiveTheme.chromeSilver,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'TEÓRICO: ${totalTeorico.toStringAsFixed(2)} $unidad',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AutomotiveTheme.chromeSilver,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    totalReal.toStringAsFixed(2),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: AutomotiveTheme.hudCyan,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    unidad,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AutomotiveTheme.hudCyan.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              _badge(
+                '${diferencia >= 0 ? '+' : ''}${diferencia.toStringAsFixed(2)}',
+                colorDif,
+              ),
+            ],
           ),
         ],
       ),
@@ -1030,67 +1628,27 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       exactos += (h['exactos'] as num?)?.toInt() ?? 0;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CiautoColors.border),
-      ),
+    return _buildHudPanel(
+      accent: AutomotiveTheme.hudLime,
+      cornerLabel: 'SYS::MOV',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: CiautoColors.redLight,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  color: CiautoColors.red,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Movimiento de unidades',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: CiautoColors.dark,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Unidades consumidas, entradas y salidas por hora',
-                      style: TextStyle(fontSize: 12, color: CiautoColors.gray),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          _buildHudHeader('MOVIMIENTO DE UNIDADES',
+              accent: AutomotiveTheme.hudLime),
           const SizedBox(height: 16),
           Wrap(
             spacing: 12,
             runSpacing: 12,
             children: [
-              _buildMetricaResponsive('Unidades totales', '$unidades',
-                  Icons.inventory, CiautoColors.dark),
-              _buildMetricaResponsive('Entradas (sobró)', '+$entradas',
-                  Icons.arrow_downward, Colors.green.shade700),
-              _buildMetricaResponsive('Salidas (faltó)', '-$salidas',
-                  Icons.arrow_upward, CiautoColors.red),
-              _buildMetricaResponsive('Exactos', '$exactos',
-                  Icons.check_circle_outline, CiautoColors.gray),
+              _buildMetricaResponsive('UNIDADES TOTALES', '$unidades',
+                  Icons.inventory, Colors.white),
+              _buildMetricaResponsive('ENTRADAS (SOBRÓ)', '+$entradas',
+                  Icons.arrow_downward, AutomotiveTheme.hudLime),
+              _buildMetricaResponsive('SALIDAS (FALTÓ)', '-$salidas',
+                  Icons.arrow_upward, AutomotiveTheme.hudMagenta),
+              _buildMetricaResponsive('EXACTOS', '$exactos',
+                  Icons.check_circle_outline, AutomotiveTheme.chromeSilver),
             ],
           ),
         ],
@@ -1099,76 +1657,36 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
-  // LISTADO DE TOTALES (con 4 pestañas)
+  // LISTADO DE TOTALES
   // ============================================================
 
   Widget _buildListadoTotales() {
     final tieneDatos = _totalesPorComponente.isNotEmpty;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CiautoColors.border),
-      ),
+    return _buildHudPanel(
+      accent: AutomotiveTheme.hudCyan,
+      cornerLabel: 'SYS::DATA',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: CiautoColors.redLight,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.list_alt,
-                  color: CiautoColors.red,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Totales de consumo',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: CiautoColors.dark,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Detalle acumulado por ítem',
-                      style: TextStyle(fontSize: 12, color: CiautoColors.gray),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          _buildHudHeader('TOTALES DE CONSUMO'),
           const SizedBox(height: 16),
           if (!tieneDatos)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: Text(
-                  'Sin datos de consumo aún',
-                  style: TextStyle(color: CiautoColors.gray),
+                  '// SIN DATOS DE CONSUMO AÚN',
+                  style: TextStyle(
+                      color: AutomotiveTheme.chromeSilver, letterSpacing: 1.5),
                 ),
               ),
             )
           else ...[
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
+                color: Colors.black.withValues(alpha: 0.3),
+                border: Border.all(color: AutomotiveTheme.hudLine),
               ),
               padding: const EdgeInsets.all(4),
               child: Row(
@@ -1220,14 +1738,17 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         decoration: BoxDecoration(
-          color: seleccionado ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: seleccionado
+              ? AutomotiveTheme.hudCyan.withValues(alpha: 0.15)
+              : Colors.transparent,
+          border: Border.all(
+            color: seleccionado ? AutomotiveTheme.hudCyan : Colors.transparent,
+          ),
           boxShadow: seleccionado
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.3),
+                    blurRadius: 8,
                   ),
                 ]
               : null,
@@ -1238,7 +1759,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Icon(
               icono,
               size: 14,
-              color: seleccionado ? CiautoColors.red : CiautoColors.gray,
+              color: seleccionado
+                  ? AutomotiveTheme.hudCyan
+                  : AutomotiveTheme.chromeSilver,
             ),
             const SizedBox(width: 4),
             Flexible(
@@ -1248,9 +1771,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight:
-                      seleccionado ? FontWeight.w700 : FontWeight.normal,
-                  color: seleccionado ? CiautoColors.red : CiautoColors.gray,
+                  fontWeight: seleccionado ? FontWeight.w900 : FontWeight.w600,
+                  color: seleccionado
+                      ? AutomotiveTheme.hudCyan
+                      : AutomotiveTheme.chromeSilver,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
@@ -1274,8 +1799,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: CiautoColors.redLight,
-                borderRadius: BorderRadius.circular(8),
+                color: AutomotiveTheme.hudCyan.withValues(alpha: 0.10),
+                border: Border.all(
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -1285,8 +1811,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       columnaNombre,
                       style: const TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: CiautoColors.redDark,
+                        fontWeight: FontWeight.w900,
+                        color: AutomotiveTheme.hudCyan,
+                        letterSpacing: 2,
                       ),
                     ),
                   ),
@@ -1297,8 +1824,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         mostrarVecesUsado ? 'VECES' : 'CÁLCULOS',
                         style: const TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: CiautoColors.redDark,
+                          fontWeight: FontWeight.w900,
+                          color: AutomotiveTheme.hudCyan,
+                          letterSpacing: 2,
                         ),
                       ),
                     ),
@@ -1309,8 +1837,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('REAL',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.orange)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudCyan,
+                              letterSpacing: 2)),
                     ),
                   ),
                   const SizedBox(
@@ -1319,8 +1848,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('TEÓRICO',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.blue)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudMagenta,
+                              letterSpacing: 2)),
                     ),
                   ),
                   const SizedBox(
@@ -1329,8 +1859,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('DIFERENCIA',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CiautoColors.redDark)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudLime,
+                              letterSpacing: 2)),
                     ),
                   ),
                 ],
@@ -1350,19 +1881,18 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   : (item['total_calculos'] as int?) ?? 0;
 
               final colorDif = diferencia > 0
-                  ? Colors.orange.shade700
+                  ? AutomotiveTheme.hudMagenta
                   : diferencia < 0
-                      ? Colors.green.shade700
-                      : CiautoColors.gray;
+                      ? AutomotiveTheme.hudLime
+                      : AutomotiveTheme.chromeSilver;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 4),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: CiautoColors.border),
+                  color: Colors.black.withValues(alpha: 0.25),
+                  border: Border.all(color: AutomotiveTheme.hudLine, width: 1),
                 ),
                 child: Row(
                   children: [
@@ -1374,8 +1904,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: CiautoColors.dark,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ),
@@ -1386,14 +1917,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(6),
+                            color:
+                                AutomotiveTheme.hudLine.withValues(alpha: 0.5),
                           ),
                           child: Text(
                             '$veces',
                             style: const TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -1404,10 +1936,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: Text(
                           totalReal.toStringAsFixed(2),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w900,
+                            color: AutomotiveTheme.hudCyan,
                           ),
                         ),
                       ),
@@ -1417,10 +1949,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: Text(
                           totalTeorico.toStringAsFixed(2),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w900,
+                            color: AutomotiveTheme.hudMagenta,
                           ),
                         ),
                       ),
@@ -1450,8 +1982,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         padding: EdgeInsets.symmetric(vertical: 20),
         child: Center(
           child: Text(
-            'Sin consumos registrados por hora',
-            style: TextStyle(color: CiautoColors.gray),
+            '// SIN CONSUMOS REGISTRADOS POR HORA',
+            style: TextStyle(
+                color: AutomotiveTheme.chromeSilver, letterSpacing: 1.5),
           ),
         ),
       );
@@ -1466,8 +1999,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: CiautoColors.redLight,
-                borderRadius: BorderRadius.circular(8),
+                color: AutomotiveTheme.hudCyan.withValues(alpha: 0.10),
+                border: Border.all(
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.5)),
               ),
               child: const Row(
                 children: [
@@ -1476,8 +2010,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     child: Text('HORA',
                         style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: CiautoColors.redDark)),
+                            fontWeight: FontWeight.w900,
+                            color: AutomotiveTheme.hudCyan,
+                            letterSpacing: 2)),
                   ),
                   SizedBox(
                     width: 80,
@@ -1485,8 +2020,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('CÁLCULOS',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CiautoColors.redDark)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudCyan,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -1495,8 +2031,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('UNIDADES',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.purple)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudLime,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -1505,8 +2042,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('ENTRADAS',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.green)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudLime,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -1515,8 +2053,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('SALIDAS',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CiautoColors.red)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudMagenta,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -1525,8 +2064,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('REAL',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.orange)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudCyan,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -1535,8 +2075,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('TEÓRICO',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.blue)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudMagenta,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -1545,8 +2086,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Text('DIFERENCIA',
                           style: TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CiautoColors.redDark)),
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudLime,
+                              letterSpacing: 2)),
                     ),
                   ),
                 ],
@@ -1565,10 +2107,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
               final dif = real - teorico;
 
               final colorDif = dif > 0
-                  ? Colors.orange.shade700
+                  ? AutomotiveTheme.hudMagenta
                   : dif < 0
-                      ? Colors.green.shade700
-                      : CiautoColors.gray;
+                      ? AutomotiveTheme.hudLime
+                      : AutomotiveTheme.chromeSilver;
 
               String horaBonita = hora;
               try {
@@ -1581,9 +2123,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: CiautoColors.border),
+                  color: Colors.black.withValues(alpha: 0.25),
+                  border: Border.all(color: AutomotiveTheme.hudLine, width: 1),
                 ),
                 child: Row(
                   children: [
@@ -1592,14 +2133,14 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Row(
                         children: [
                           const Icon(Icons.access_time,
-                              size: 14, color: CiautoColors.red),
+                              size: 14, color: AutomotiveTheme.hudCyan),
                           const SizedBox(width: 6),
                           Text(
                             horaBonita,
                             style: const TextStyle(
                               fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: CiautoColors.dark,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -1612,14 +2153,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(6),
+                            color:
+                                AutomotiveTheme.hudLine.withValues(alpha: 0.5),
                           ),
                           child: Text(
                             '$calculos',
                             style: const TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -1632,8 +2174,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                           '$unidades',
                           style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.purple,
+                            fontWeight: FontWeight.w900,
+                            color: AutomotiveTheme.hudLime,
                           ),
                         ),
                       ),
@@ -1641,13 +2183,13 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     SizedBox(
                       width: 80,
                       child: Center(
-                        child: _badge('+$entradas', Colors.green.shade700),
+                        child: _badge('+$entradas', AutomotiveTheme.hudLime),
                       ),
                     ),
                     SizedBox(
                       width: 80,
                       child: Center(
-                        child: _badge('-$salidas', CiautoColors.red),
+                        child: _badge('-$salidas', AutomotiveTheme.hudMagenta),
                       ),
                     ),
                     SizedBox(
@@ -1655,10 +2197,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: Text(
                           real.toStringAsFixed(2),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w900,
+                            color: AutomotiveTheme.hudCyan,
                           ),
                         ),
                       ),
@@ -1668,10 +2210,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: Text(
                           teorico.toStringAsFixed(2),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w900,
+                            color: AutomotiveTheme.hudMagenta,
                           ),
                         ),
                       ),
@@ -1696,7 +2238,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   }
 
   // ============================================================
-  // DETALLE POR HORA (CORREGIDO — SIN "OVERFLOWED")
+  // DETALLE POR HORA
   // ============================================================
 
   Widget _buildDetallePorHora(List<Map<String, dynamic>> datos) {
@@ -1705,8 +2247,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         padding: EdgeInsets.symmetric(vertical: 20),
         child: Center(
           child: Text(
-            'Sin detalle de componentes por hora',
-            style: TextStyle(color: CiautoColors.gray),
+            '// SIN DETALLE DE COMPONENTES POR HORA',
+            style: TextStyle(
+                color: AutomotiveTheme.chromeSilver, letterSpacing: 1.5),
           ),
         ),
       );
@@ -1729,13 +2272,14 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: CiautoColors.border),
+            color: Colors.black.withValues(alpha: 0.25),
+            border: Border.all(color: AutomotiveTheme.hudLine),
           ),
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
+              iconColor: AutomotiveTheme.hudCyan,
+              collapsedIconColor: AutomotiveTheme.chromeSilver,
               tilePadding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
@@ -1743,24 +2287,24 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: CiautoColors.redLight,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AutomotiveTheme.hudCyan.withValues(alpha: 0.12),
                   border: Border.all(
-                    color: CiautoColors.red.withValues(alpha: 0.3),
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.access_time,
-                        size: 14, color: CiautoColors.red),
+                        size: 14, color: AutomotiveTheme.hudCyan),
                     const SizedBox(width: 6),
                     Text(
                       horaBonita,
                       style: const TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: CiautoColors.red,
+                        fontWeight: FontWeight.w900,
+                        color: AutomotiveTheme.hudCyan,
+                        letterSpacing: 1,
                       ),
                     ),
                   ],
@@ -1770,20 +2314,21 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 '${componentes.length} ${componentes.length == 1 ? 'componente' : 'componentes'}',
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: CiautoColors.dark,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
                 ),
               ),
               subtitle: Text(
                 vehiculos.isEmpty
                     ? 'Sin vehículos'
                     : '${vehiculos.length} ${vehiculos.length == 1 ? 'vehículo' : 'vehículos'}',
-                style: const TextStyle(fontSize: 10, color: CiautoColors.gray),
+                style: const TextStyle(
+                    fontSize: 10, color: AutomotiveTheme.chromeSilver),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               children: [
-                // ─── SCROLL HORIZONTAL PARA EVITAR "OVERFLOWED" ───
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: ConstrainedBox(
@@ -1795,8 +2340,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: CiautoColors.redLight,
-                            borderRadius: BorderRadius.circular(8),
+                            color:
+                                AutomotiveTheme.hudCyan.withValues(alpha: 0.10),
+                            border: Border.all(
+                                color: AutomotiveTheme.hudCyan
+                                    .withValues(alpha: 0.5)),
                           ),
                           child: const Row(
                             children: [
@@ -1805,8 +2353,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                 child: Text('COMPONENTE',
                                     style: TextStyle(
                                         fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        color: CiautoColors.redDark)),
+                                        fontWeight: FontWeight.w900,
+                                        color: AutomotiveTheme.hudCyan,
+                                        letterSpacing: 2)),
                               ),
                               SizedBox(
                                 width: 55,
@@ -1814,8 +2363,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                   child: Text('VECES',
                                       style: TextStyle(
                                           fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: CiautoColors.redDark)),
+                                          fontWeight: FontWeight.w900,
+                                          color: AutomotiveTheme.hudCyan,
+                                          letterSpacing: 2)),
                                 ),
                               ),
                               SizedBox(
@@ -1824,8 +2374,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                   child: Text('REAL',
                                       style: TextStyle(
                                           fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.orange)),
+                                          fontWeight: FontWeight.w900,
+                                          color: AutomotiveTheme.hudCyan,
+                                          letterSpacing: 2)),
                                 ),
                               ),
                               SizedBox(
@@ -1834,8 +2385,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                   child: Text('TEÓR',
                                       style: TextStyle(
                                           fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.blue)),
+                                          fontWeight: FontWeight.w900,
+                                          color: AutomotiveTheme.hudMagenta,
+                                          letterSpacing: 2)),
                                 ),
                               ),
                               SizedBox(
@@ -1844,8 +2396,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                   child: Text('E',
                                       style: TextStyle(
                                           fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.green)),
+                                          fontWeight: FontWeight.w900,
+                                          color: AutomotiveTheme.hudLime,
+                                          letterSpacing: 2)),
                                 ),
                               ),
                               SizedBox(
@@ -1854,8 +2407,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                   child: Text('S',
                                       style: TextStyle(
                                           fontSize: 10,
-                                          fontWeight: FontWeight.w800,
-                                          color: CiautoColors.red)),
+                                          fontWeight: FontWeight.w900,
+                                          color: AutomotiveTheme.hudMagenta,
+                                          letterSpacing: 2)),
                                 ),
                               ),
                             ],
@@ -1878,9 +2432,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: CiautoColors.border),
+                              color: Colors.black.withValues(alpha: 0.25),
+                              border: Border.all(
+                                  color: AutomotiveTheme.hudLine, width: 1),
                             ),
                             child: Row(
                               children: [
@@ -1892,8 +2446,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: CiautoColors.dark,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
@@ -1904,14 +2458,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: Colors.grey.shade100,
-                                        borderRadius: BorderRadius.circular(4),
+                                        color: AutomotiveTheme.hudLine
+                                            .withValues(alpha: 0.5),
                                       ),
                                       child: Text(
                                         '$veces',
                                         style: const TextStyle(
                                           fontSize: 10,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ),
@@ -1924,8 +2479,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                       real.toStringAsFixed(2),
                                       style: const TextStyle(
                                         fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange,
+                                        fontWeight: FontWeight.w900,
+                                        color: AutomotiveTheme.hudCyan,
                                       ),
                                     ),
                                   ),
@@ -1937,8 +2492,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                       teorico.toStringAsFixed(2),
                                       style: const TextStyle(
                                         fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue,
+                                        fontWeight: FontWeight.w900,
+                                        color: AutomotiveTheme.hudMagenta,
                                       ),
                                     ),
                                   ),
@@ -1951,24 +2506,26 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: Colors.green
-                                                  .withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
+                                              color: AutomotiveTheme.hudLime
+                                                  .withValues(alpha: 0.15),
+                                              border: Border.all(
+                                                  color: AutomotiveTheme.hudLime
+                                                      .withValues(alpha: 0.5)),
                                             ),
                                             child: Text(
                                               '+$entradas',
                                               style: const TextStyle(
                                                 fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.green,
+                                                fontWeight: FontWeight.w900,
+                                                color: AutomotiveTheme.hudLime,
                                               ),
                                             ),
                                           )
                                         : const Text('-',
                                             style: TextStyle(
                                                 fontSize: 10,
-                                                color: CiautoColors.gray)),
+                                                color: AutomotiveTheme
+                                                    .chromeSilver)),
                                   ),
                                 ),
                                 SizedBox(
@@ -1979,24 +2536,28 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: CiautoColors.red
-                                                  .withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
+                                              color: AutomotiveTheme.hudMagenta
+                                                  .withValues(alpha: 0.15),
+                                              border: Border.all(
+                                                  color: AutomotiveTheme
+                                                      .hudMagenta
+                                                      .withValues(alpha: 0.5)),
                                             ),
                                             child: Text(
                                               '-$salidas',
                                               style: const TextStyle(
                                                 fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: CiautoColors.red,
+                                                fontWeight: FontWeight.w900,
+                                                color:
+                                                    AutomotiveTheme.hudMagenta,
                                               ),
                                             ),
                                           )
                                         : const Text('-',
                                             style: TextStyle(
                                                 fontSize: 10,
-                                                color: CiautoColors.gray)),
+                                                color: AutomotiveTheme
+                                                    .chromeSilver)),
                                   ),
                                 ),
                               ],
@@ -2019,91 +2580,27 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   // MÉTRICAS
   // ============================================================
 
-  Widget _buildMetricaGrande(
-    String label,
-    String valor,
-    String unidad,
-    IconData icono,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icono, size: 16, color: color),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: CiautoColors.gray,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Flexible(
-                child: Text(
-                  valor,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                unidad,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: color.withValues(alpha: 0.7),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildMiniMetrica(IconData icono, String valor, String label) {
     return Column(
       children: [
-        Icon(icono, size: 18, color: CiautoColors.gray),
+        Icon(icono, size: 18, color: AutomotiveTheme.hudCyan),
         const SizedBox(height: 4),
         Text(
           valor,
           style: const TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: CiautoColors.dark,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(fontSize: 10, color: CiautoColors.gray),
+          style: const TextStyle(
+            fontSize: 9,
+            color: AutomotiveTheme.chromeSilver,
+            letterSpacing: 2,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
@@ -2119,8 +2616,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2134,8 +2630,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style:
-                      const TextStyle(fontSize: 12, color: CiautoColors.gray),
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: color,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2),
                 ),
               ),
             ],
@@ -2147,7 +2646,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
               color: color,
             ),
           ),
@@ -2163,12 +2662,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     Color color,
   ) {
     return Container(
-      width: 140,
+      width: 150,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2182,10 +2680,11 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: CiautoColors.gray,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                    letterSpacing: 1.5,
                   ),
                 ),
               ),
@@ -2198,7 +2697,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w900,
               color: color,
             ),
           ),
@@ -2212,33 +2711,33 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
   // ============================================================
 
   Widget _buildFiltroCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: CiautoColors.border),
-      ),
+    return _buildHudPanel(
+      accent: AutomotiveTheme.hudCyan,
+      cornerLabel: 'SYS::SELECT',
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: CiautoColors.redLight,
-              borderRadius: BorderRadius.circular(8),
+              color: AutomotiveTheme.hudCyan.withValues(alpha: 0.12),
+              border: Border.all(
+                  color: AutomotiveTheme.hudCyan.withValues(alpha: 0.5)),
             ),
             child: const Icon(
               Icons.filter_alt_outlined,
               size: 18,
-              color: CiautoColors.red,
+              color: AutomotiveTheme.hudCyan,
             ),
           ),
           const SizedBox(width: 12),
           const Text(
-            'Vehículo:',
+            'VEHÍCULO:',
             style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: CiautoColors.dark,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 2.5,
+              fontSize: 11,
             ),
           ),
           const SizedBox(width: 12),
@@ -2246,10 +2745,25 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             child: DropdownButtonFormField<String>(
               initialValue: _filtroVehiculo,
               isExpanded: true,
+              dropdownColor: AutomotiveTheme.hudPanel,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              iconEnabledColor: AutomotiveTheme.hudCyan,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(0),
+                  borderSide: const BorderSide(color: AutomotiveTheme.hudLine),
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(0),
+                  borderSide: const BorderSide(color: AutomotiveTheme.hudLine),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(0)),
+                  borderSide:
+                      BorderSide(color: AutomotiveTheme.hudCyan, width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.black.withValues(alpha: 0.3),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 8,
@@ -2277,23 +2791,26 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
 
   Widget _buildListaCalculos() {
     if (_calculosFiltrados.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: CiautoColors.border),
-        ),
-        child: const Center(
-          child: Column(
-            children: [
-              Icon(Icons.inbox_outlined, size: 60, color: CiautoColors.gray),
-              SizedBox(height: 12),
-              Text(
-                'No hay cálculos registrados',
-                style: TextStyle(fontSize: 16, color: CiautoColors.gray),
-              ),
-            ],
+      return _buildHudPanel(
+        accent: AutomotiveTheme.chromeSilver,
+        cornerLabel: 'SYS::HIST',
+        child: const Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.inbox_outlined,
+                    size: 60, color: AutomotiveTheme.chromeSilver),
+                SizedBox(height: 12),
+                Text(
+                  '// NO HAY CÁLCULOS REGISTRADOS',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: AutomotiveTheme.chromeSilver,
+                      letterSpacing: 1.5),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -2302,15 +2819,22 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'Historial de cálculos',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: CiautoColors.dark,
-            ),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: [
+              Container(width: 3, height: 16, color: AutomotiveTheme.hudCyan),
+              const SizedBox(width: 8),
+              const Text(
+                'HISTORIAL DE CÁLCULOS',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 3,
+                ),
+              ),
+            ],
           ),
         ),
         ..._calculosFiltrados.map(_buildCalculoExpandible),
@@ -2324,18 +2848,29 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         double.tryParse(calculo['diferencia']?.toString() ?? '0') ?? 0.0;
 
     final color = diferencia > 0
-        ? Colors.orange.shade700
+        ? AutomotiveTheme.hudMagenta
         : diferencia < 0
-            ? Colors.green.shade700
-            : CiautoColors.gray;
+            ? AutomotiveTheme.hudLime
+            : AutomotiveTheme.chromeSilver;
 
     final nombre = calculo['nombreVehiculo']?.toString() ?? 'Vehículo';
 
     DateTime? fecha;
     try {
-      final raw = DateTime.parse(calculo['created_at'].toString());
-      fecha = raw.isUtc ? raw.toLocal() : raw;
-    } catch (_) {}
+      final rawStr = calculo['created_at'].toString();
+      final texto = rawStr.replaceFirst(' ', 'T');
+      if (texto.endsWith('Z')) {
+        fecha = DateTime.parse(texto).toLocal();
+      } else {
+        fecha = DateTime.parse('${texto}Z').toLocal();
+      }
+    } catch (_) {
+      try {
+        fecha = DateTime.parse(calculo['created_at'].toString());
+      } catch (_) {
+        fecha = null;
+      }
+    }
 
     final fechaTexto = fecha != null
         ? DateFormat('dd/MM/yyyy HH:mm').format(fecha)
@@ -2344,38 +2879,44 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: CiautoColors.border),
+        color: Colors.black.withValues(alpha: 0.25),
+        border: Border.all(
+          color: color.withValues(alpha: 0.5),
+          width: 1.2,
+        ),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           shape: const Border(),
           collapsedShape: const Border(),
+          iconColor: color,
+          collapsedIconColor: AutomotiveTheme.chromeSilver,
           leading: Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              gradient: CiautoColors.redGradient,
-              borderRadius: BorderRadius.circular(12),
+              color: color.withValues(alpha: 0.12),
+              border: Border.all(color: color.withValues(alpha: 0.5)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.directions_car_outlined,
-              color: Colors.white,
+              color: color,
             ),
           ),
           title: Text(
             nombre,
             style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: CiautoColors.dark,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 0.5,
             ),
           ),
           subtitle: Text(
             fechaTexto,
-            style: const TextStyle(fontSize: 12, color: CiautoColors.gray),
+            style: const TextStyle(
+                fontSize: 11, color: AutomotiveTheme.chromeSilver),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -2384,20 +2925,20 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: color.withValues(alpha: 0.30)),
+                  color: color.withValues(alpha: 0.12),
+                  border: Border.all(color: color.withValues(alpha: 0.5)),
                 ),
                 child: Text(
                   '${diferencia >= 0 ? '+' : ''}${diferencia.toStringAsFixed(2)} L',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
                     color: color,
                   ),
                 ),
               ),
-              const Icon(Icons.expand_more, color: CiautoColors.gray),
+              const SizedBox(width: 4),
+              Icon(Icons.expand_more, color: color),
             ],
           ),
           children: [
@@ -2413,7 +2954,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: CiautoColors.red,
+                          color: AutomotiveTheme.hudCyan,
                         ),
                       ),
                     ),
@@ -2425,7 +2966,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Text(
                       'Error: ${snapshot.error}',
-                      style: const TextStyle(color: CiautoColors.red),
+                      style: const TextStyle(color: AutomotiveTheme.hudMagenta),
                     ),
                   );
                 }
@@ -2436,7 +2977,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     padding: EdgeInsets.all(16),
                     child: Text(
                       'Sin componentes registrados',
-                      style: TextStyle(color: CiautoColors.gray),
+                      style: TextStyle(color: AutomotiveTheme.chromeSilver),
                     ),
                   );
                 }
@@ -2446,14 +2987,15 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Divider(),
+                      const Divider(color: AutomotiveTheme.hudLine),
                       const SizedBox(height: 4),
                       const Text(
-                        'Detalle por componente:',
+                        'DETALLE POR COMPONENTE',
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: CiautoColors.dark,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: AutomotiveTheme.hudCyan,
+                          letterSpacing: 2.5,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -2479,8 +3021,9 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: CiautoColors.redLight,
-                borderRadius: BorderRadius.circular(8),
+                color: AutomotiveTheme.hudCyan.withValues(alpha: 0.10),
+                border: Border.all(
+                    color: AutomotiveTheme.hudCyan.withValues(alpha: 0.5)),
               ),
               child: const Row(
                 children: [
@@ -2488,18 +3031,20 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     width: 220,
                     child: Text('COMPONENTE',
                         style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: CiautoColors.redDark)),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: AutomotiveTheme.hudCyan,
+                            letterSpacing: 2)),
                   ),
                   SizedBox(
                     width: 90,
                     child: Center(
                       child: Text('STOCK',
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CiautoColors.redDark)),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudCyan,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -2507,9 +3052,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     child: Center(
                       child: Text('TEÓRICO',
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CiautoColors.redDark)),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudMagenta,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -2517,9 +3063,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     child: Center(
                       child: Text('REAL',
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: CiautoColors.redDark)),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudCyan,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -2527,9 +3074,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     child: Center(
                       child: Text('STOCK - REAL',
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.orange)),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudCyan,
+                              letterSpacing: 2)),
                     ),
                   ),
                   SizedBox(
@@ -2537,9 +3085,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                     child: Center(
                       child: Text('STOCK - TEÓRICO',
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.blue)),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: AutomotiveTheme.hudMagenta,
+                              letterSpacing: 2)),
                     ),
                   ),
                 ],
@@ -2561,9 +3110,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: CiautoColors.border),
+                  color: Colors.black.withValues(alpha: 0.25),
+                  border: Border.all(color: AutomotiveTheme.hudLine, width: 1),
                 ),
                 child: Row(
                   children: [
@@ -2573,8 +3121,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                         nombre,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 12, color: CiautoColors.dark),
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.white),
                       ),
                     ),
                     SizedBox(
@@ -2584,8 +3132,8 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                           stock.toStringAsFixed(2),
                           style: const TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: CiautoColors.dark,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -2595,9 +3143,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: Text(
                           reseta.toStringAsFixed(2),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w700,
+                            color: AutomotiveTheme.hudMagenta,
                           ),
                         ),
                       ),
@@ -2607,9 +3156,10 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: Text(
                           valorReal.toStringAsFixed(2),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w700,
+                            color: AutomotiveTheme.hudCyan,
                           ),
                         ),
                       ),
@@ -2619,7 +3169,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: _badge(
                           stockReal.toStringAsFixed(2),
-                          Colors.orange.shade700,
+                          AutomotiveTheme.hudCyan,
                         ),
                       ),
                     ),
@@ -2628,7 +3178,7 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
                       child: Center(
                         child: _badge(
                           stockTeorico.toStringAsFixed(2),
-                          Colors.blue.shade700,
+                          AutomotiveTheme.hudMagenta,
                         ),
                       ),
                     ),
@@ -2647,14 +3197,13 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.30)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         texto,
         style: TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
           color: color,
         ),
       ),
@@ -2672,7 +3221,17 @@ class _ConsumoScreenState extends State<ConsumoScreen> {
         SnackBar(
           content: Text(mensaje),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: esError ? CiautoColors.red : null,
+          backgroundColor:
+              esError ? AutomotiveTheme.hudMagenta : AutomotiveTheme.hudPanel,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(0),
+            side: BorderSide(
+              color: (esError
+                      ? AutomotiveTheme.hudMagenta
+                      : AutomotiveTheme.hudLime)
+                  .withValues(alpha: 0.6),
+            ),
+          ),
         ),
       );
   }
